@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Evana Draperies Invoice Builder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-wrap">
+      <div class="brand-logo-shell">
+        <img src="assets/evana-logo.png" alt="Evana Draperies logo" class="brand-logo" />
+      </div>
+      <div class="brand-copy">
+        <div class="eyebrow light">PRIVATE WORKROOM TOOL</div>
+        <h1>Evana Draperies</h1>
+        <p>Estimate & Invoice Studio</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn header-btn" id="clientsBtn">Clients</button>
+      <button class="btn header-btn" id="dashboardBtn">Dashboard</button>
+      <button class="btn gold" id="printBtn">Print / Save PDF</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="panel builder-panel" id="builderPanel">
+      <div class="section-title-row">
+        <div>
+          <div class="eyebrow">PROJECT SETUP</div>
+          <h2>Create Estimate</h2>
+          <p class="section-subtitle">Build the work order room by room, then finish with quantity and pricing.</p>
+        </div>
+        <div class="segmented" role="group" aria-label="Document type">
+          <button class="seg active" data-doc-type="Estimate">Estimate</button>
+          <button class="seg" data-doc-type="Invoice">Invoice</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4">
+        <label>Client
+          <div class="inline-field">
+            <select id="clientSelect"></select>
+            <button type="button" class="mini-btn" id="newClientBtn">+ New</button>
+          </div>
+        </label>
+        <label>Project / Address
+          <input id="projectAddress" placeholder="114 Gregg Street" />
+        </label>
+        <label>Date
+          <input id="docDate" type="date" />
+        </label>
+        <label>Invoice #
+          <input id="invoiceNumber" placeholder="1001" />
+        </label>
+      </div>
+
+      <div class="grid grid-3 compact-top">
+        <label>Status
+          <select id="invoiceStatus">
+            <option>Quote</option>
+            <option>In Progress</option>
+            <option>Awaiting Payment</option>
+            <option>Complete</option>
+          </select>
+        </label>
+        <label>Supply Total Override
+          <input id="supplyTotal" type="number" step="0.01" min="0" value="0" />
+        </label>
+        <label>Installation Total Override
+          <input id="installationTotal" type="number" step="0.01" min="0" value="0" />
+        </label>
+      </div>
+
+      <div class="rooms-header">
+        <div>
+          <div class="eyebrow">ROOMS & ITEMS</div>
+          <h2>Build the Work Order</h2>
+          <p class="section-subtitle">Add the rooms exactly the way they should appear on the estimate.</p>
+        </div>
+        <button class="btn secondary" id="addRoomBtn">+ Add Room</button>
+      </div>
+
+      <div id="roomsContainer" class="rooms"></div>
+
+      <div class="builder-footer-actions">
+        <button class="btn secondary" id="saveDraftBtn">Save Draft</button>
+        <button class="btn primary" id="saveInvoiceBtn">Save to Client History</button>
+      </div>
+    </section>
+
+    <aside class="panel preview-panel">
+      <div class="section-title-row preview-head no-print">
+        <div>
+          <div class="eyebrow">LIVE PREVIEW</div>
+          <h2>Invoice Layout</h2>
+          <p class="section-subtitle">This is the printable client-facing version.</p>
+        </div>
+        <button class="btn ghost" id="refreshPreviewBtn">Refresh</button>
+      </div>
+      <div id="invoicePreview" class="invoice-page"></div>
+    </aside>
+  </main>
+
+  <dialog id="clientDialog" class="dialog">
+    <form method="dialog" id="clientForm">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">CLIENT RECORD</div>
+          <h2>Add New Client</h2>
+        </div>
+        <button class="icon-btn" value="cancel" aria-label="Close">×</button>
+      </div>
+      <div class="grid grid-2">
+        <label>Client / Company Name<input id="clientName" required /></label>
+        <label>Contact Person<input id="contactName" /></label>
+      </div>
+      <label>Billing / Project Address<input id="clientAddress" /></label>
+      <div class="grid grid-2">
+        <label>Phone 1<input id="clientPhone1" /></label>
+        <label>Phone 2<input id="clientPhone2" /></label>
+      </div>
+      <div class="grid grid-2">
+        <label>Email 1<input id="clientEmail1" type="email" /></label>
+        <label>Email 2<input id="clientEmail2" type="email" /></label>
+      </div>
+      <label>Notes<textarea id="clientNotes" rows="3"></textarea></label>
+      <div class="dialog-actions">
+        <button class="btn ghost" value="cancel">Cancel</button>
+        <button class="btn primary" id="saveClientBtn" value="default">Save Client</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="clientsDialog" class="dialog wide-dialog">
+    <div class="dialog-head">
+      <div>
+        <div class="eyebrow">CLIENTS</div>
+        <h2>Saved Clients</h2>
+      </div>
+      <button class="icon-btn" id="closeClientsDialog" aria-label="Close">×</button>
+    </div>
+    <div id="clientsList"></div>
+  </dialog>
+
+  <dialog id="dashboardDialog" class="dialog wide-dialog">
+    <div class="dialog-head">
+      <div>
+        <div class="eyebrow">DASHBOARD MOCK</div>
+        <h2>Client Cash Flow & Invoices</h2>
+      </div>
+      <button class="icon-btn" id="closeDashboardDialog" aria-label="Close">×</button>
+    </div>
+    <p class="muted">Cash flow counts invoices marked Complete. Expand a client to see invoice history.</p>
+    <div id="dashboardList"></div>
+  </dialog>
+
+  <template id="roomTemplate">
+    <section class="room-card">
+      <div class="room-head">
+        <label class="room-name-label">Room Name
+          <input class="room-name" placeholder="Living Room / Dining Room" />
+        </label>
+        <div class="room-actions">
+          <button class="mini-btn add-item-btn" type="button">+ Add Item</button>
+          <button class="mini-btn danger remove-room-btn" type="button">Remove Room</button>
+        </div>
+      </div>
+      <div class="items"></div>
+      <label class="room-notes-label">Custom Room Description / Notes
+        <textarea class="room-notes" rows="3" placeholder="Add any wording your mom wants to appear under this room..."></textarea>
+      </label>
+    </section>
+  </template>
+
+  <template id="itemTemplate">
+    <article class="item-card">
+      <div class="item-card-head">
+        <div>
+          <span class="item-number"></span>
+          <strong class="item-title">New Item</strong>
+        </div>
+        <button class="icon-btn remove-item-btn" type="button" title="Remove item">×</button>
+      </div>
+
+      <div class="item-type-tabs">
+        <button type="button" class="type-tab active" data-type="drapery">Drapery</button>
+        <button type="button" class="type-tab" data-type="roman">Roman Shade</button>
+        <button type="button" class="type-tab" data-type="pillow">Pillow</button>
+        <button type="button" class="type-tab" data-type="custom">Custom</button>
+      </div>
+
+      <div class="item-form"></div>
+      <div class="price-summary"></div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
