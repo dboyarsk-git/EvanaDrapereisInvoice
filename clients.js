@@ -1,6 +1,18 @@
 const $=(s,r=document)=>r.querySelector(s);
 const esc=(s="")=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=n=>`$${(Number(n)||0).toFixed(2)}`;
+function clientPhone1(c={}){
+  return (c.phones&&c.phones[0]) || c.phone1 || c.phone || "";
+}
+function clientPhone2(c={}){
+  return (c.phones&&c.phones[1]) || c.phone2 || "";
+}
+function clientEmail1(c={}){
+  return (c.emails&&c.emails[0]) || c.email1 || c.email || "";
+}
+function clientEmail2(c={}){
+  return (c.emails&&c.emails[1]) || c.email2 || "";
+}
 function formatPhone(value=""){
   const digits=String(value).replace(/\D/g,"").slice(0,10);
   if(digits.length===0) return "";
@@ -35,10 +47,10 @@ function render(){
       </div>
       <div class="client-detail-grid">
         <div><span>Address</span><strong>${esc(c.address||"—")}</strong></div>
-        <div><span>Phone 1</span><strong>${esc((c.phones||[])[0]?formatPhone((c.phones||[])[0]):"—")}</strong></div>
-        <div><span>Phone 2</span><strong>${esc((c.phones||[])[1]?formatPhone((c.phones||[])[1]):"—")}</strong></div>
-        <div><span>Email 1</span><strong>${esc((c.emails||[])[0]||"—")}</strong></div>
-        <div><span>Email 2</span><strong>${esc((c.emails||[])[1]||"—")}</strong></div>
+        <div><span>Phone 1</span><strong>${esc(clientPhone1(c)?formatPhone(clientPhone1(c)):"—")}</strong></div>
+        <div><span>Phone 2</span><strong>${esc(clientPhone2(c)?formatPhone(clientPhone2(c)):"—")}</strong></div>
+        <div><span>Email 1</span><strong>${esc(clientEmail1(c)||"—")}</strong></div>
+        <div><span>Email 2</span><strong>${esc(clientEmail2(c)||"—")}</strong></div>
         <div><span>Completed Cash Flow</span><strong>${money(cash)}</strong></div>
       </div>
       ${c.notes?`<div class="client-notes-box"><span>Notes</span>${esc(c.notes)}</div>`:""}
@@ -57,8 +69,8 @@ function openEdit(id){
   $("#clientDialogTitle").textContent="Edit Client";
   $("#editClientId").value=c.id;
   $("#pcName").value=c.name||""; $("#pcContact").value=c.contact||""; $("#pcAddress").value=c.address||"";
-  $("#pcPhone1").value=(c.phones||[])[0]||""; $("#pcPhone2").value=(c.phones||[])[1]||"";
-  $("#pcEmail1").value=(c.emails||[])[0]||""; $("#pcEmail2").value=(c.emails||[])[1]||"";
+  $("#pcPhone1").value=formatPhone(clientPhone1(c)); $("#pcPhone2").value=formatPhone(clientPhone2(c));
+  $("#pcEmail1").value=clientEmail1(c); $("#pcEmail2").value=clientEmail2(c);
   $("#pcNotes").value=c.notes||"";
   $("#clientPageDialog").showModal();
 }
@@ -73,7 +85,7 @@ $("#clientPageForm").addEventListener("submit",e=>{
   if(e.submitter?.value==="cancel")return;
   e.preventDefault();
   const id=$("#editClientId").value;
-  const data={id:id||uid("client"),name:$("#pcName").value.trim(),contact:$("#pcContact").value.trim(),address:$("#pcAddress").value.trim(),phones:[$("#pcPhone1").value.trim(),$("#pcPhone2").value.trim()],emails:[$("#pcEmail1").value.trim(),$("#pcEmail2").value.trim()],notes:$("#pcNotes").value.trim()};
+  const data={id:id||uid("client"),name:$("#pcName").value.trim(),contact:$("#pcContact").value.trim(),address:$("#pcAddress").value.trim(),phones:[formatPhone($("#pcPhone1").value.trim()),formatPhone($("#pcPhone2").value.trim())],emails:[$("#pcEmail1").value.trim(),$("#pcEmail2").value.trim()],notes:$("#pcNotes").value.trim()};
   if(!data.name)return;
   if(id){clients=clients.map(c=>c.id===id?data:c)}else{clients.push(data)}
   persist(); $("#clientPageDialog").close(); render();

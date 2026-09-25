@@ -66,7 +66,7 @@ function seed(){
     persistClients();
   }
   populateClients();
-  $("#docDate").value = new Date().toISOString().slice(0,10);
+  $("#docDate").value = localISODate();
   $("#invoiceNumber").value = String(nextInvoiceNumber());
   const title=$("#builderTitle"); if(title) title.textContent=`Create ${state.docType}`;
   addRoom("Living Room / Dining Room");
@@ -408,13 +408,14 @@ function itemDescription(i){
       `${style} (${liningText})`,
       `${qty} ${piece}${qty>1?"s":""}, ${widths} width${widths===1?"":"s"}, FL-${num(i.fl)||""}", FW-${num(i.fw)||""}"`
     ];
-    // Show automatic charges underneath as their own lines.
+
     c.reasons.forEach(r=>bits.push(r));
-    // Selected optional details each get their own line — no "Extras:" label.
+
     (i.extras||[]).forEach(x=>{
-      if(i.type==="drapery" && x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
+      if(x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
       bits.push(x);
     });
+
     if(i.itemNote) bits.push(i.itemNote);
     return bits.filter(Boolean).join("\n");
   }
@@ -500,7 +501,7 @@ function renderPreview(){
   $("#invoicePreview").innerHTML=`<div class="invoice-wrap"><div class="watermark"><span>${esc(docType.toUpperCase())}</span></div>
     <div class="invoice-top">
       <div class="invoice-brand"><h1>Evana Draperies</h1><div>8200 Hornwood Ct</div><div>Charlotte NC 28215</div><br><div>Phone: 704-236-6032</div><div>Fax: 704-568-8078</div><div>Email: Evanadraperies1@gmail.com</div></div>
-      <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.name||"")}</div><div>Phone: ${esc(formatPhone((c.phones||[])[0]||""))}</div><div>Email: ${esc((c.emails||[])[0]||"")}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
+      <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.name||"")}</div><div>Phone: ${esc(formatPhone(clientPhone1(c)))}</div><div>Email: ${esc(clientEmail1(c))}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
     </div>
     <table class="invoice-table"><thead><tr><th>Quantity</th><th>Description</th><th>Price Per Unit</th><th>Final Price</th></tr></thead><tbody>${rows.join("")||`<tr><td>&nbsp;</td><td class="invoice-desc">Add rooms and items to begin.</td><td></td><td></td></tr>`}</tbody></table>
     <div class="invoice-bottom"><div><div>Check Make to: Inna Boyarskiy</div><div>Venmo: @Inna_Boyarskiy</div><div>Cash App: $InnaBoyarskiy</div></div><div class="totals"><div class="total-row"><span>Supply:</span><span>${money(supply)}</span></div><div class="total-row"><span>Labor:</span><span>${money(labor)}</span></div><div class="total-row"><span>Installation:</span><span>${money(install)}</span></div>${discount.amount?`<div class="total-row discount-row"><span>${esc(discount.label)}${discount.type==="percent"?` (${discount.raw}%)`:""}:</span><span>-${money(discount.amount)}</span></div>`:""}<div class="total-row subtotal-row"><span>Subtotal:</span><span>${money(subtotal)}</span></div><div class="total-row grand"><span>Total:</span><span>${money(total)}</span></div></div></div>
@@ -519,7 +520,7 @@ function collectInvoice(){
 
 function renderClientsList(){
   const wrap=$("#clientsList"); if(!wrap) return;
-  wrap.innerHTML=state.clients.map(c=>`<div class="client-row"><h3>${esc(c.name)}</h3><div class="client-meta">${esc(c.contact||"")} ${c.address?`• ${esc(c.address)}`:""}</div><div class="client-meta">${esc((c.phones||[]).filter(Boolean).join(" / "))}</div><div class="client-meta">${esc((c.emails||[]).filter(Boolean).join(" / "))}</div>${c.notes?`<div class="client-meta">${esc(c.notes)}</div>`:""}</div>`).join("");
+  wrap.innerHTML=state.clients.map(c=>`<div class="client-row"><h3>${esc(c.name)}</h3><div class="client-meta">${esc(c.contact||"")} ${c.address?`• ${esc(c.address)}`:""}</div><div class="client-meta">${[clientPhone1(c),clientPhone2(c)].filter(Boolean).map(formatPhone).map(esc).join(" / ")}</div><div class="client-meta">${[clientEmail1(c),clientEmail2(c)].filter(Boolean).map(esc).join(" / ")}</div>${c.notes?`<div class="client-meta">${esc(c.notes)}</div>`:""}</div>`).join("");
 }
 function renderDashboard(){
   const wrap=$("#dashboardList"); if(!wrap) return;
@@ -552,7 +553,7 @@ $("#closeDashboardDialog").addEventListener("click",()=>$("#dashboardDialog").cl
 $("#clientForm").addEventListener("submit",e=>{
   if(e.submitter?.value==="cancel") return;
   e.preventDefault();
-  const c={id:uid("client"),name:$("#clientName").value.trim(),contact:$("#contactName").value.trim(),address:$("#clientAddress").value.trim(),phones:[$("#clientPhone1").value.trim(),$("#clientPhone2").value.trim()],emails:[$("#clientEmail1").value.trim(),$("#clientEmail2").value.trim()],notes:$("#clientNotes").value.trim()};
+  const c={id:uid("client"),name:$("#clientName").value.trim(),contact:$("#contactName").value.trim(),address:$("#clientAddress").value.trim(),phones:[formatPhone($("#clientPhone1").value.trim()),formatPhone($("#clientPhone2").value.trim())],emails:[$("#clientEmail1").value.trim(),$("#clientEmail2").value.trim()],notes:$("#clientNotes").value.trim()};
   if(!c.name) return;
   state.clients.push(c); persistClients(); populateClients(); $("#clientSelect").value=c.id; $("#projectAddress").value=c.address; $("#clientForm").reset(); $("#clientDialog").close(); renderPreview();
 });
@@ -569,7 +570,7 @@ $("#saveInvoiceBtn").addEventListener("click",()=>{
 $("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
 
 
-["#cPhone1","#cPhone2"].forEach(sel=>{
+["#clientPhone1","#clientPhone2"].forEach(sel=>{
   const el=$(sel);
   if(!el) return;
   el.addEventListener("input",()=>{
