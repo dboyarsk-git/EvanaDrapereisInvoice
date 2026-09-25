@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evana Draperies — Clients</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="clients-page-body">
+<header class="app-header">
+  <div class="brand-wrap">
+    <div class="brand-logo-shell"><img src="assets/evana-logo.png" alt="Evana Draperies logo" class="brand-logo"></div>
+    <div class="brand-copy">
+      <div class="eyebrow light">PRIVATE WORKROOM TOOL</div>
+      <h1>Evana Draperies</h1>
+      <p>Client Library</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a class="btn header-btn link-btn" href="index.html">← Invoice Builder</a>
+    <button class="btn gold" id="addClientPageBtn">+ Add Client</button>
+  </div>
+</header>
+
+<main class="clients-page-shell">
+  <section class="clients-hero">
+    <div>
+      <div class="eyebrow">CLIENT DIRECTORY</div>
+      <h2>Clients</h2>
+      <p>Open a client to see contact details, project notes, completed cash flow, and invoice history.</p>
+    </div>
+    <input id="clientSearch" class="client-search" placeholder="Search clients...">
+  </section>
+  <div id="clientCards" class="client-card-grid"></div>
+</main>
+
+<dialog id="clientPageDialog" class="dialog">
+  <form method="dialog" id="clientPageForm">
+    <div class="dialog-head">
+      <div><div class="eyebrow">CLIENT RECORD</div><h2 id="clientDialogTitle">Add Client</h2></div>
+      <button class="icon-btn" value="cancel" aria-label="Close">×</button>
+    </div>
+    <input type="hidden" id="editClientId">
+    <div class="grid grid-2">
+      <label>Client / Company Name<input id="pcName" required></label>
+      <label>Contact Person<input id="pcContact"></label>
+    </div>
+    <label>Billing / Project Address<input id="pcAddress"></label>
+    <div class="grid grid-2">
+      <label>Phone 1<input id="pcPhone1"></label>
+      <label>Phone 2<input id="pcPhone2"></label>
+    </div>
+    <div class="grid grid-2">
+      <label>Email 1<input id="pcEmail1" type="email"></label>
+      <label>Email 2<input id="pcEmail2" type="email"></label>
+    </div>
+    <label>Notes<textarea id="pcNotes" rows="4"></textarea></label>
+    <div class="dialog-actions">
+      <button class="btn ghost" value="cancel">Cancel</button>
+      <button class="btn primary" id="saveClientPageBtn" value="default">Save Client</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="clients.js"></script>
+</body>
+</html>

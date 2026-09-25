@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn header-btn" id="clientsBtn">Clients</button>
+      <button class="btn header-btn" id="clientsBtn" type="button">Clients</button>
       <button class="btn header-btn" id="dashboardBtn">Dashboard</button>
       <button class="btn gold" id="printBtn">Print / Save PDF</button>
     </div>
@@ -52,8 +52,8 @@
         <label>Date
           <input id="docDate" type="date" />
         </label>
-        <label>Invoice #
-          <input id="invoiceNumber" placeholder="1001" />
+        <label>Invoice # <span class="auto-tag">AUTO</span>
+          <input id="invoiceNumber" placeholder="691" readonly />
         </label>
       </div>
 
@@ -84,6 +84,38 @@
       </div>
 
       <div id="roomsContainer" class="rooms"></div>
+
+      <section class="invoice-adjustments-card">
+        <div class="adjustments-head">
+          <div>
+            <div class="eyebrow">INVOICE TOTALS</div>
+            <h3>Discounts & Final Adjustments</h3>
+            <p>Edit a percentage or dollar discount before the final total is calculated.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-3">
+          <label>Discount Type
+            <select id="discountType">
+              <option value="none">No Discount</option>
+              <option value="percent">Percentage (%)</option>
+              <option value="flat">Dollar Amount ($)</option>
+            </select>
+          </label>
+
+          <label>Discount Value
+            <input id="discountValue" type="number" min="0" step="0.01" value="0" />
+          </label>
+
+          <label>Discount Label
+            <input id="discountLabel" value="Discount" placeholder="Designer Discount, Courtesy Discount..." />
+          </label>
+        </div>
+
+        <div class="adjustment-live-summary" id="discountSummary">
+          No discount applied.
+        </div>
+      </section>
 
       <div class="builder-footer-actions">
         <button class="btn secondary" id="saveDraftBtn">Save Draft</button>

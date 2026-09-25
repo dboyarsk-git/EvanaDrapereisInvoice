@@ -53,3 +53,123 @@ label{display:block;font-size:11px;letter-spacing:.03em;font-weight:800;color:va
 @media (max-width:1200px){.app-shell{grid-template-columns:1fr}.preview-panel{position:relative;top:auto;max-height:none}.grid-4{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:720px){.app-header{align-items:flex-start;gap:12px;flex-direction:column;padding:12px 14px}.header-actions{width:100%}.header-actions .btn{flex:1}.app-shell{padding:10px}.builder-panel,.preview-panel{padding:13px;border-radius:12px}.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}.room-head{align-items:stretch;flex-direction:column}.choice-grid{grid-template-columns:1fr 1fr}.invoice-page{padding:18px 14px;min-height:auto}.invoice-top{grid-template-columns:1fr}.invoice-doc h1{text-align:left}.invoice-doc .right-block{margin-left:0}.invoice-brand h1,.invoice-doc h1{font-size:30px}.invoice-table th:nth-child(1){width:11%}.invoice-table th:nth-child(2){width:59%}.invoice-table th:nth-child(3){width:15%}.invoice-table th:nth-child(4){width:15%}.brand-logo-shell{width:52px;height:52px}.brand-logo{width:44px;height:44px}.brand-copy h1{font-size:21px}}
 @media print{body{background:white}.no-print,.app-header,.builder-panel,.preview-head{display:none!important}.app-shell{display:block;padding:0}.preview-panel{padding:0;border:0;box-shadow:none;max-height:none;overflow:visible;background:white}.invoice-page{border:0;box-shadow:none;max-width:none;width:100%;min-height:auto;margin:0;padding:.35in .45in}.panel{border:0;box-shadow:none}@page{size:letter portrait;margin:.25in}}
+
+
+/* ---------- V3 workflow refinements ---------- */
+.auto-tag{
+  display:inline-flex;align-items:center;margin-left:5px;padding:2px 6px;border-radius:999px;
+  background:var(--cream);color:var(--gold);font-size:8px;font-weight:900;letter-spacing:.08em
+}
+input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
+.workflow-label{margin:13px 0 7px;color:var(--gold);font-size:9px;letter-spacing:.14em;font-weight:900}
+.grid-1{grid-template-columns:1fr}
+.drapery-measure-row{
+  display:grid;grid-template-columns:60px 1.05fr .85fr .85fr .85fr;gap:10px;align-items:end
+}
+.tiny-qty input{text-align:center;font-weight:800;font-size:16px;padding-left:4px;padding-right:4px}
+.inch-field{display:flex;align-items:center;gap:6px}
+.inch-field input{margin-top:6px}
+.inch-field span{font:700 18px Georgia,serif;color:var(--forest);padding-top:6px}
+.surcharge-section{background:#f6f2ea}
+.surcharge-live{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.surcharge-live.is-hidden{display:none}
+.surcharge-badge{
+  display:inline-flex;padding:7px 9px;border-radius:999px;background:#fff4e0;border:1px solid #dcc494;
+  color:#6b542b;font-size:11px;font-weight:800
+}
+.no-surcharge{font-size:11px;color:var(--muted);font-style:italic}
+.switch-label{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);cursor:pointer}
+.switch-label input{display:none}
+.switch{width:34px;height:19px;border-radius:999px;background:#c9c2b7;position:relative;transition:.18s}
+.switch:after{content:"";position:absolute;width:13px;height:13px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s}
+.switch-label input:checked + .switch{background:var(--forest)}
+.switch-label input:checked + .switch:after{transform:translateX(15px)}
+.suggested-price-card{
+  margin-top:6px;border:1px solid #d7cbbb;border-radius:8px;background:#f9f5ef;padding:9px 11px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px
+}
+.suggested-price-card span{font-size:10px;font-weight:800;color:var(--muted)}
+.suggested-price-card strong{font-family:Georgia,serif;color:var(--forest)}
+.link-btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+
+/* Clients as a dedicated page */
+.clients-page-body{min-height:100vh}
+.clients-page-shell{max-width:1320px;margin:0 auto;padding:28px 22px 60px}
+.clients-hero{
+  display:flex;align-items:end;justify-content:space-between;gap:20px;
+  padding:26px 28px;border:1px solid var(--line);border-radius:16px;
+  background:linear-gradient(135deg,#fffdf9,#f1e8da);box-shadow:var(--shadow)
+}
+.clients-hero h2{margin:3px 0 4px;font-family:"Bodoni 72","Didot",Georgia,serif;font-size:38px;font-weight:500;color:var(--forest-deep)}
+.clients-hero p{margin:0;color:var(--muted);font-family:Georgia,serif}
+.client-search{max-width:330px;background:#fff}
+.client-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
+.client-detail-card{border:1px solid var(--line);border-radius:14px;background:#fffdf9;padding:18px;box-shadow:var(--shadow-soft)}
+.client-detail-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding-bottom:13px;border-bottom:1px solid #e7dfd3}
+.client-company{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--forest)}
+.client-contact{color:var(--muted);font-size:12px;margin-top:4px}
+.client-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:13px}
+.client-detail-grid>div{padding:9px 10px;border-radius:8px;background:#f8f4ee}
+.client-detail-grid span,.client-notes-box span{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--gold);font-weight:900;margin-bottom:4px}
+.client-detail-grid strong{display:block;font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+.client-notes-box{margin-top:12px;padding:10px;background:#f7f2e9;border-left:3px solid var(--gold);font-size:12px;line-height:1.5}
+.client-history{margin-top:13px;border-top:1px solid #e7dfd3;padding-top:10px}
+.client-history summary{cursor:pointer;font-family:Georgia,serif;font-weight:700;color:var(--forest);display:flex;justify-content:space-between}
+.client-history summary span{background:var(--cream);padding:2px 7px;border-radius:999px;font-family:Arial,sans-serif;font-size:10px}
+.empty-state{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px;background:#fff}
+
+@media(max-width:900px){
+  .drapery-measure-row{grid-template-columns:54px 1fr 1fr}
+  .drapery-measure-row label:nth-child(4),.drapery-measure-row label:nth-child(5){grid-column:auto}
+  .client-card-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .drapery-measure-row{grid-template-columns:54px 1fr}
+  .clients-hero{align-items:stretch;flex-direction:column}
+  .client-search{max-width:none}
+  .client-detail-grid{grid-template-columns:1fr}
+}
+
+
+/* ---------- V3.1 Discounts ---------- */
+.invoice-adjustments-card{
+  margin-top:22px;
+  padding:18px;
+  border:1px solid #d9cfbf;
+  border-radius:14px;
+  background:linear-gradient(180deg,#fffdf9,#f7f1e7);
+  box-shadow:var(--shadow-soft);
+}
+.adjustments-head h3{
+  margin:3px 0 4px;
+  font-family:"Bodoni 72","Didot",Georgia,serif;
+  color:var(--forest-deep);
+  font-size:23px;
+  font-weight:500;
+}
+.adjustments-head p{
+  margin:0 0 14px;
+  color:var(--muted);
+  font-family:Georgia,serif;
+  font-size:12px;
+}
+.adjustment-live-summary{
+  margin-top:12px;
+  padding:11px 13px;
+  border-radius:9px;
+  border-left:3px solid var(--gold);
+  background:#fff;
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  font-size:12px;
+}
+.adjustment-live-summary strong{color:var(--forest)}
+.invoice-bottom .discount-row{
+  color:#8b2f2f;
+}
+.invoice-bottom .subtotal-row{
+  border-top:1px solid #bbb;
+  padding-top:2px;
+  margin-top:2px;
+}

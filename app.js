@@ -3,6 +3,7 @@ const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
 
 const PRICE = {
   drapery: {
+    "Euro Pinch Pleat": { range:[120,120], unit:"per width" },
     "Euro / Parisian": { range:[120,120], unit:"per width" },
     "Pinch Pleat": { range:[65,85], unit:"per width" },
     "Sheer Rod Pocket": { range:[65,65], unit:"per width" },
@@ -31,7 +32,7 @@ const PRICE = {
   }
 };
 
-const DRAPERY_STYLES = ["Euro / Parisian","Pinch Pleat","Sheer Rod Pocket","Sheer Pinch Pleat","Rod Pocket","Flat Top","Goblet Pleat","Grommet","Ripple Tape","Custom"];
+const DRAPERY_STYLES = ["Euro Pinch Pleat","Euro / Parisian","Pinch Pleat","Sheer Rod Pocket","Sheer Pinch Pleat","Rod Pocket","Flat Top","Goblet Pleat","Grommet","Ripple Tape","Custom"];
 const LININGS = ["No Lining","Lined","Interlined","Blackout","Blackout + Interlined","Bump","Custom"];
 const DRAPERY_EXTRAS = ["Pattern Matching","Fabric Band","Trim","Hand Side Hem","Mounted on Board","Attached Valance","Grommets","Hardware","Alteration","Bump","Custom Extra"];
 const ROMAN_EXTRAS = ["Motorized","Rowley Lifting System","Cordless Lifting System","Continuous Cord System","Stabilizing Fabric","Tailored Valance","Pattern Match","Inside Mount","Outside Mount","Hardware","Custom Extra"];
@@ -46,6 +47,7 @@ const state = {
 
 const LS_CLIENTS = "evana_clients_v1";
 const LS_INVOICES = "evana_invoices_v1";
+const INVOICE_START = 691;
 
 function uid(prefix="id"){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
 function money(n){ return `$${(Number(n)||0).toFixed(2)}`; }
@@ -73,8 +75,10 @@ function seed(){
 function persistClients(){ localStorage.setItem(LS_CLIENTS, JSON.stringify(state.clients)); }
 function persistInvoices(){ localStorage.setItem(LS_INVOICES, JSON.stringify(state.invoices)); }
 function nextInvoiceNumber(){
-  const nums = state.invoices.map(i=>parseInt(i.invoiceNumber,10)).filter(Number.isFinite);
-  return nums.length ? Math.max(...nums)+1 : 1001;
+  const nums = state.invoices
+    .map(i=>parseInt(i.invoiceNumber,10))
+    .filter(n=>Number.isFinite(n) && n>=INVOICE_START);
+  return nums.length ? Math.max(...nums)+1 : INVOICE_START;
 }
 
 function populateClients(){
@@ -138,33 +142,96 @@ function options(arr,selected){ return arr.map(v=>`<option ${v===selected?"selec
 function checkChips(arr,selected=[]){ return arr.map(v=>`<label class="check-chip"><input type="checkbox" class="extra-check" value="${esc(v)}" ${selected.includes(v)?"checked":""}>${esc(v)}</label>`).join(""); }
 
 function draperyForm(i){
-  i.style ||= DRAPERY_STYLES[0]; i.pieceType ||= "Pair"; i.widths ??= 1; i.fl ??=""; i.fw ??=""; i.lining ||= "Lined"; i.extras ||= []; i.unitPrice ??= PRICE.drapery[i.style]?.range[0]||0; i.quantity ??=1; i.customStyle||=""; i.itemNote||=""; i.showPricing ??= true;
+  i.style ||= "Euro Pinch Pleat";
+  i.pieceType ||= "Pair";
+  i.widths ??= 1;
+  i.fl ??="";
+  i.fw ??="";
+  i.lining ||= "Lined";
+  i.extras ||= [];
+  i.unitPrice ??= PRICE.drapery[i.style]?.range[0]||0;
+  i.quantity ??=1;
+  i.customStyle||="";
+  i.itemNote||="";
+  i.showPricing ??= true;
+
+  const calc = draperyCalc(i);
+  const surchargeBadges = calc.reasons.length
+    ? calc.reasons.map(r=>`<span class="surcharge-badge">${esc(r)}</span>`).join("")
+    : `<span class="no-surcharge">No automatic surcharge currently applies.</span>`;
+
   return `
-  <div class="grid grid-3">
-    <label>Style<select class="f-style">${options(DRAPERY_STYLES,i.style)}</select></label>
-    <label>Pair / Panel<select class="f-piece">${options(["Pair","Panel"],i.pieceType)}</select></label>
-    <label>Widths<input class="f-widths" type="number" min="0" step="0.5" value="${i.widths}"></label>
+  <div class="workflow-label">STYLE</div>
+  <div class="grid grid-1">
+    <label>Drapery Style
+      <select class="f-style">${options(DRAPERY_STYLES,i.style)}</select>
+    </label>
   </div>
-  <div class="grid grid-3">
-    <label>Finished Length (FL) <input class="f-fl" type="number" min="0" step="0.25" value="${i.fl}"></label>
-    <label>Finished Width (FW) <input class="f-fw" type="number" min="0" step="0.25" value="${i.fw}"></label>
-    <label>Lining<select class="f-lining">${options(LININGS,i.lining)}</select></label>
+
+  <div class="workflow-label">MEASUREMENTS</div>
+  <div class="drapery-measure-row">
+    <label class="tiny-qty">Q
+      <input class="f-quantity" type="number" min="1" max="9" step="1" value="${i.quantity}" inputmode="numeric">
+    </label>
+    <label>Pair / Panel
+      <select class="f-piece">${options(["Pair","Panel"],i.pieceType)}</select>
+    </label>
+    <label>Q Width
+      <input class="f-widths" type="number" min="0" step="0.5" value="${i.widths}">
+    </label>
+    <label>FL
+      <div class="inch-field"><input class="f-fl" type="number" min="0" step="0.25" value="${i.fl}"><span>"</span></div>
+    </label>
+    <label>FW
+      <div class="inch-field"><input class="f-fw" type="number" min="0" step="0.25" value="${i.fw}"><span>"</span></div>
+    </label>
   </div>
+
+  <div class="grid grid-2">
+    <label>Lining
+      <select class="f-lining">${options(LININGS,i.lining)}</select>
+    </label>
+    <label>Price Per Width
+      <input class="f-unit-price" type="number" min="0" step="0.01" value="${i.unitPrice}">
+    </label>
+  </div>
+
   ${i.style==="Custom"?`<label>Custom Style<input class="f-custom-style" value="${esc(i.customStyle)}"></label>`:""}
+
+  <div class="subsection surcharge-section">
+    <div class="subsection-head">
+      <h4>Automatic Additional Charges</h4>
+      <label class="switch-label">
+        <input type="checkbox" class="f-show-pricing" ${i.showPricing?"checked":""}>
+        <span class="switch"></span>
+        <span>${i.showPricing?"Shown":"Hidden"}</span>
+      </label>
+    </div>
+    <div class="surcharge-live ${i.showPricing===false?"is-hidden":""}">
+      ${surchargeBadges}
+    </div>
+  </div>
+
   <div class="subsection">
-    <div class="subsection-head"><h4>Extras — select all that apply, then continue</h4><span class="muted">Checkbox group</span></div>
+    <div class="subsection-head"><h4>Optional Details</h4><span class="muted">Select everything that applies</span></div>
     <div class="choice-grid">${checkChips(DRAPERY_EXTRAS,i.extras)}</div>
   </div>
-  <label>Item Description / Custom Note<textarea class="f-item-note" rows="2" placeholder="Hardware, traverse rod, French return, special instructions...">${esc(i.itemNote)}</textarea></label>
-  <div class="grid grid-3">
-    <label>Price Per Width<input class="f-unit-price" type="number" min="0" step="0.01" value="${i.unitPrice}"></label>
-    <label>Quantity (entered last)<input class="f-quantity" type="number" min="1" step="1" value="${i.quantity}"></label>
-    <label>Override Final Price<input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional"></label>
+
+  <label>Custom Description / Notes
+    <textarea class="f-item-note" rows="2" placeholder="Traverse rod, French return, special instructions, custom wording...">${esc(i.itemNote)}</textarea>
+  </label>
+
+  <div class="grid grid-2">
+    <label>Override Final Price
+      <input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional">
+    </label>
+    <div class="suggested-price-card">
+      <span>Suggested price range</span>
+      <strong>${rangeText(PRICE.drapery[i.style]?.range)}</strong>
+    </div>
   </div>
-  <div class="toggle-row"><label class="toggle"><input type="checkbox" class="f-show-pricing" ${i.showPricing?"checked":""}> Show surcharge / pricing details</label><span class="muted">Suggested range: ${rangeText(PRICE.drapery[i.style]?.range)}</span></div>
   `;
 }
-
 function romanForm(i){
   i.style ||= "Flat Roman"; i.fl ??=""; i.fw ??=""; i.extras ||= []; i.quantity ??=1; i.unitPrice ??= PRICE.roman[i.style]?.rate||0; i.overridePrice||=""; i.itemNote||=""; i.motorCost ??= 300; i.showPricing ??=true;
   return `
@@ -219,7 +286,7 @@ function rangeText(r){ if(!r) return "Manual"; return r[0]===r[1]?money(r[0]):`$
 
 function bindItemForm(node,item){
   const bind=(sel,key,convert=v=>v,rerender=false)=>{ const el=$(sel,node); if(!el) return; const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input"; el.addEventListener(evt,e=>{ item[key]=convert(el.type==="checkbox"?el.checked:el.value); if(rerender) renderRooms(); else { renderPriceSummary(node,item); renderPreview(); } }); };
-  bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType"); bind(".f-widths","widths",num); bind(".f-fl","fl",num); bind(".f-fw","fw",num); bind(".f-lining","lining"); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean);
+  bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num,true); bind(".f-fl","fl",num,true); bind(".f-fw","fw",num,true); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
   $$(".extra-check",node).forEach(ch=>ch.addEventListener("change",()=>{ item.extras=$$(".extra-check:checked",node).map(x=>x.value); renderRooms(); renderPreview(); }));
 }
 
@@ -292,18 +359,33 @@ function renderPriceSummary(node,item){
 function itemDescription(i){
   if(i.type==="drapery"){
     const style=i.style==="Custom"?(i.customStyle||"Custom Drapery"):i.style;
-    const bits=[`${style} ${i.pieceType||""}`.trim(), i.lining && i.lining!=="No Lining"?i.lining.toLowerCase():"unlined", `${i.pieceType||"Pair"} • ${i.widths||0} width${num(i.widths)===1?"":"s"}`, `FL-${num(i.fl)||""}\", FW-${num(i.fw)||""}\"`];
-    if(i.extras?.length) bits.push(`Extras: ${i.extras.join(", ")}`);
+    const c=draperyCalc(i);
+    const bits=[
+      style,
+      i.lining && i.lining!=="No Lining"?i.lining.toLowerCase():"unlined",
+      `${i.quantity||1} ${String(i.pieceType||"Pair").toLowerCase()}${num(i.quantity)>1?"s":""}, ${i.widths||0} width${num(i.widths)===1?"":"s"}`,
+      `FL-${num(i.fl)||""}", FW-${num(i.fw)||""}"`
+    ];
+    // Show automatic charges underneath as their own lines.
+    c.reasons.forEach(r=>bits.push(r));
+    // Selected optional details each get their own line — no "Extras:" label.
+    (i.extras||[]).forEach(x=>bits.push(x));
     if(i.itemNote) bits.push(i.itemNote);
     return bits.filter(Boolean).join("\n");
   }
   if(i.type==="roman"){
-    const c=romanCalc(i); const bits=[i.style||"Roman Shade",`FW-${num(i.fw)||""}\", FL-${num(i.fl)||""}\" [${c.sqft.toFixed(2)} sq. ft.]`];
-    if(i.extras?.length) bits.push(`Extras: ${i.extras.join(", ")}`);
-    if(i.itemNote) bits.push(i.itemNote); return bits.join("\n");
+    const c=romanCalc(i);
+    const bits=[i.style||"Roman Shade",`FW-${num(i.fw)||""}", FL-${num(i.fl)||""}" [${c.sqft.toFixed(2)} sq. ft.]`];
+    c.reasons.forEach(r=>bits.push(r));
+    (i.extras||[]).forEach(x=>bits.push(x));
+    if(i.itemNote) bits.push(i.itemNote);
+    return bits.join("\n");
   }
   if(i.type==="pillow"){
-    const bits=[`${i.size||""}${i.size&&i.size!=="Custom"?'" ':''}${i.style||"Pillow"}`.trim()]; if(i.extras?.length) bits.push(`Extras: ${i.extras.join(", ")}`); if(i.itemNote) bits.push(i.itemNote); return bits.join("\n");
+    const bits=[`${i.size||""}${i.size&&i.size!=="Custom"?'" ':''}${i.style||"Pillow"}`.trim()];
+    (i.extras||[]).forEach(x=>bits.push(x));
+    if(i.itemNote) bits.push(i.itemNote);
+    return bits.join("\n");
   }
   return i.description||"Custom item";
 }
@@ -311,6 +393,39 @@ function itemUnitPrice(i){
   if(i.type==="roman") return num(i.unitPrice);
   if(i.type==="pillow") return num(i.unitPrice);
   return num(i.unitPrice);
+}
+
+
+function discountCalc(subtotal){
+  const type=$("#discountType")?.value||"none";
+  const raw=Math.max(0,num($("#discountValue")?.value));
+  let amount=0;
+  let display="";
+  if(type==="percent" && raw>0){
+    amount=subtotal*(raw/100);
+    display=`${raw}%`;
+  }else if(type==="flat" && raw>0){
+    amount=raw;
+    display=money(raw);
+  }
+  amount=Math.min(amount,subtotal);
+  const label=($("#discountLabel")?.value||"Discount").trim()||"Discount";
+  return {type,raw,amount,display,label};
+}
+function renderDiscountSummary(){
+  const box=$("#discountSummary");
+  if(!box) return;
+  let labor=0;
+  state.rooms.forEach(r=>r.items.forEach(i=>labor+=calcItem(i).final));
+  const supply=num($("#supplyTotal").value);
+  const install=num($("#installationTotal").value);
+  const subtotal=supply+labor+install;
+  const d=discountCalc(subtotal);
+  if(!d.amount){
+    box.innerHTML=`<span>No discount applied.</span><strong>${money(subtotal)} current total</strong>`;
+    return;
+  }
+  box.innerHTML=`<span>${esc(d.label)}: ${esc(d.display)}</span><strong>-${money(d.amount)} → ${money(subtotal-d.amount)}</strong>`;
 }
 
 function renderPreview(){
@@ -326,14 +441,14 @@ function renderPreview(){
     });
     if(!room.items.length && room.notes){ rows.push(`<tr><td></td><td class="invoice-desc"><div class="room-title">${esc(room.name||"Untitled Room")}</div>${esc(room.notes)}</td><td></td><td></td></tr>`); }
   });
-  const supply=num($("#supplyTotal").value); const install=num($("#installationTotal").value); const total=supply+labor+install;
-  $("#invoicePreview").innerHTML=`<div class="invoice-wrap"><div class="watermark"><span>ESTIMATE</span></div>
+  const supply=num($("#supplyTotal").value); const install=num($("#installationTotal").value); const subtotal=supply+labor+install; const discount=discountCalc(subtotal); const total=subtotal-discount.amount;
+  $("#invoicePreview").innerHTML=`<div class="invoice-wrap"><div class="watermark"><span>${esc(docType.toUpperCase())}</span></div>
     <div class="invoice-top">
       <div class="invoice-brand"><h1>Evana Draperies</h1><div>8200 Hornwood Ct</div><div>Charlotte NC 28215</div><br><div>Phone: 704-236-6032</div><div>Fax: 704-568-8078</div><div>Email: Evanadraperies1@gmail.com</div></div>
-      <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.contact||c.name||"")}</div><div>Phone: ${esc((c.phones||[]).filter(Boolean).join(" / ")||"")}</div><div>Email: ${esc((c.emails||[]).filter(Boolean).join(" / ")||"")}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
+      <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.name||"")}</div><div>Phone: ${esc((c.phones||[])[0]||"")}</div><div>Email: ${esc((c.emails||[])[0]||"")}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
     </div>
     <table class="invoice-table"><thead><tr><th>Quantity</th><th>Description</th><th>Price Per Unit</th><th>Final Price</th></tr></thead><tbody>${rows.join("")||`<tr><td>&nbsp;</td><td class="invoice-desc">Add rooms and items to begin.</td><td></td><td></td></tr>`}</tbody></table>
-    <div class="invoice-bottom"><div><div>Check Make to: Inna Boyarskiy</div><div>Venmo: @Inna_Boyarskiy</div><div>Cash App: $InnaBoyarskiy</div></div><div class="totals"><div class="total-row"><span>Supply:</span><span>${money(supply)}</span></div><div class="total-row"><span>Labor:</span><span>${money(labor)}</span></div><div class="total-row"><span>Installation:</span><span>${money(install)}</span></div><div class="total-row grand"><span>Total:</span><span>${money(total)}</span></div></div></div>
+    <div class="invoice-bottom"><div><div>Check Make to: Inna Boyarskiy</div><div>Venmo: @Inna_Boyarskiy</div><div>Cash App: $InnaBoyarskiy</div></div><div class="totals"><div class="total-row"><span>Supply:</span><span>${money(supply)}</span></div><div class="total-row"><span>Labor:</span><span>${money(labor)}</span></div><div class="total-row"><span>Installation:</span><span>${money(install)}</span></div>${discount.amount?`<div class="total-row discount-row"><span>${esc(discount.label)}${discount.type==="percent"?` (${discount.raw}%)`:""}:</span><span>-${money(discount.amount)}</span></div>`:""}<div class="total-row subtotal-row"><span>Subtotal:</span><span>${money(subtotal)}</span></div><div class="total-row grand"><span>Total:</span><span>${money(total)}</span></div></div></div>
   </div>`;
 }
 function formatDate(v){ if(!v) return ""; const d=new Date(v+"T00:00:00"); return d.toLocaleDateString("en-US"); }
@@ -341,7 +456,9 @@ function formatDate(v){ if(!v) return ""; const d=new Date(v+"T00:00:00"); retur
 function collectInvoice(){
   const c=selectedClient()||{}; let labor=0; state.rooms.forEach(r=>r.items.forEach(i=>labor+=calcItem(i).final));
   const supply=num($("#supplyTotal").value), install=num($("#installationTotal").value);
-  return {id:uid("inv"),clientId:c.id,clientName:c.name,invoiceNumber:$("#invoiceNumber").value,description:state.rooms.map(r=>r.name).filter(Boolean).join(" / ")||"Project",status:$("#invoiceStatus").value,date:$("#docDate").value,total:supply+labor+install,supply,labor,installation:install,docType:state.docType,projectAddress:$("#projectAddress").value,rooms:JSON.parse(JSON.stringify(state.rooms))};
+  const subtotal=supply+labor+install;
+  const discount=discountCalc(subtotal);
+  return {id:uid("inv"),clientId:c.id,clientName:c.name,invoiceNumber:$("#invoiceNumber").value,description:state.rooms.map(r=>r.name).filter(Boolean).join(" / ")||"Project",status:$("#invoiceStatus").value,date:$("#docDate").value,total:subtotal-discount.amount,subtotal,supply,labor,installation:install,discount:{type:discount.type,value:discount.raw,amount:discount.amount,label:discount.label},docType:state.docType,projectAddress:$("#projectAddress").value,rooms:JSON.parse(JSON.stringify(state.rooms))};
 }
 
 function renderClientsList(){
@@ -360,11 +477,11 @@ function renderDashboard(){
 $$(".seg").forEach(btn=>btn.addEventListener("click",()=>{state.docType=btn.dataset.docType; $$(".seg").forEach(b=>b.classList.toggle("active",b===btn)); renderPreview();}));
 $("#addRoomBtn").addEventListener("click",()=>addRoom(""));
 $("#clientSelect").addEventListener("change",()=>{const c=selectedClient(); if(c) $("#projectAddress").value=c.address||""; renderPreview();});
-["#projectAddress","#docDate","#invoiceNumber","#invoiceStatus","#supplyTotal","#installationTotal"].forEach(sel=>$(sel).addEventListener("input",renderPreview));
+["#projectAddress","#docDate","#invoiceStatus","#supplyTotal","#installationTotal","#discountType","#discountValue","#discountLabel"].forEach(sel=>$(sel).addEventListener("input",()=>{renderPreview();renderDiscountSummary();}));
 $("#refreshPreviewBtn").addEventListener("click",renderPreview);
 $("#printBtn").addEventListener("click",()=>{renderPreview(); window.print();});
 $("#newClientBtn").addEventListener("click",()=>$("#clientDialog").showModal());
-$("#clientsBtn").addEventListener("click",()=>{renderClientsList();$("#clientsDialog").showModal();});
+$("#clientsBtn").addEventListener("click",()=>{ window.location.href="clients.html"; });
 $("#dashboardBtn").addEventListener("click",()=>{renderDashboard();$("#dashboardDialog").showModal();});
 $("#closeClientsDialog").addEventListener("click",()=>$("#clientsDialog").close());
 $("#closeDashboardDialog").addEventListener("click",()=>$("#dashboardDialog").close());
@@ -375,7 +492,16 @@ $("#clientForm").addEventListener("submit",e=>{
   if(!c.name) return;
   state.clients.push(c); persistClients(); populateClients(); $("#clientSelect").value=c.id; $("#projectAddress").value=c.address; $("#clientForm").reset(); $("#clientDialog").close(); renderPreview();
 });
-$("#saveInvoiceBtn").addEventListener("click",()=>{const inv=collectInvoice(); state.invoices.push(inv); persistInvoices(); renderDashboard(); alert(`Saved ${inv.docType} #${inv.invoiceNumber} to ${inv.clientName}.`);});
-$("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,supply:$("#supplyTotal").value,install:$("#installationTotal").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
+$("#saveInvoiceBtn").addEventListener("click",()=>{
+  const inv=collectInvoice();
+  state.invoices.push(inv);
+  persistInvoices();
+  renderDashboard();
+  alert(`Saved ${inv.docType} #${inv.invoiceNumber} to ${inv.clientName}.`);
+  $("#invoiceNumber").value = String(nextInvoiceNumber());
+  renderPreview();
+});
+$("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,supply:$("#supplyTotal").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
 
 seed();
+renderDiscountSummary();
