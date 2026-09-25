@@ -22,19 +22,21 @@ const PRICE = {
   },
   pillow: {
     "Plain": {18:25,20:30,22:30},
-    "Brush Fringe / Flange": {18:30,20:35,22:40},
+    "Flange": {18:30,20:35,22:40},
     "Self Cord": {18:35,20:35,22:45},
-    "Ruffle + Cord / Four Triangles": {18:50,20:60,22:60},
-    "Shirred Cord / Hand Trim / Tassel": {18:55,20:55,22:60},
+    "Brush Fringe": {18:30,20:35,22:40},
+    "Contrast Flange": {18:30,20:35,22:40},
+    "Ruffle Cord": {18:50,20:60,22:60},
+    "Bolster": {18:0,20:0,22:0},
     "Custom": {18:0,20:0,22:0}
   }
 };
 
 const DRAPERY_STYLES = ["Pinch Pleat","Euro Pleat","Euro Pinch Pleat","Flat Top","Flat Top w/ Tape","Goblet","Ripple Fold","Tape","Custom"];
 const LININGS = ["Unlined","Lined","L/I","Combo Lining","Blackout","Blackout / Interlined"];
-const DRAPERY_EXTRAS = ["Pattern Matching","Fabric Band","Trim","Hand Side Hem","Mounted on Board","Attached Valance","Grommets","Hardware","Alteration","Bump","Custom Extra"];
-const ROMAN_EXTRAS = ["Motorized","Rowley Lifting System","Cordless Lifting System","Continuous Cord System","Stabilizing Fabric","Tailored Valance","Pattern Match","Inside Mount","Outside Mount","Hardware","Custom Extra"];
-const PILLOW_EXTRAS = ["Zipper","Turkish Corners","Box Construction","Pattern Matching","Cut Down Pillow Form","Custom Pillow Form","Down Insert","Trim","Custom Extra"];
+const DRAPERY_EXTRAS = ["Match Print","Fabric Band","Trim","Hand Side Hem","Mounted on Board","Attached Valance","Grommets","Hardware","Alteration","Bump","Custom"];
+const ROMAN_EXTRAS = ["Motorized","Rowley Lifting System","Cordless Lifting System","Continuous Cord System","Stabilizing Fabric","Hardware","Match Print","Custom"];
+const PILLOW_EXTRAS = ["Turkish Corners","4 Triangles","Match Print","Cut Down Pillow Form","Custom Pillow Form","Down Insert","Custom"];
 
 const state = {
   docType:"Estimate",
@@ -355,45 +357,234 @@ function draperyForm(i){
   `;
 }
 function romanForm(i){
-  i.style ||= "Flat Roman"; i.fl ??=""; i.fw ??=""; i.extras ||= []; i.quantity ??=1; i.unitPrice ??= PRICE.roman[i.style]?.rate||0; i.overridePrice||=""; i.itemNote||=""; i.motorCost ??= 300; i.showPricing ??=true;
-  return `
-  <div class="grid grid-3">
-    <label>Roman Style<select class="f-style">${options(Object.keys(PRICE.roman),i.style)}</select></label>
-    <label>Finished Width (FW)<input class="f-fw" type="number" min="0" step="0.25" value="${i.fw}"></label>
-    <label>Finished Length (FL)<input class="f-fl" type="number" min="0" step="0.25" value="${i.fl}"></label>
-  </div>
-  <div class="subsection"><div class="subsection-head"><h4>Extras</h4><span class="muted">Select multiple</span></div><div class="choice-grid">${checkChips(ROMAN_EXTRAS,i.extras)}</div></div>
-  ${i.extras.includes("Motorized")?`<label>Motor / Hardware Cost per Shade<input class="f-motor-cost" type="number" min="0" step="0.01" value="${i.motorCost}"></label>`:""}
-  <label>Item Description / Custom Note<textarea class="f-item-note" rows="2">${esc(i.itemNote)}</textarea></label>
-  <div class="grid grid-3">
-    <label>Price Per Sq. Ft.<input class="f-unit-price" type="number" min="0" step="0.01" value="${i.unitPrice}"></label>
-    <label>Quantity (entered last)<input class="f-quantity" type="number" min="1" step="1" value="${i.quantity}"></label>
-    <label>Override Final Price<input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional"></label>
-  </div>
-  <div class="toggle-row"><label class="toggle"><input type="checkbox" class="f-show-pricing" ${i.showPricing?"checked":""}> Show size / pricing details</label><span class="muted">Sq. ft. rounds to nearest 0.25</span></div>
-  `;
-}
+  i.style ||= "Flat Roman";
+  i.mount ||= "Inside Mount";
+  i.fl ??="";
+  i.fw ??="";
+  i.proj ??="";
+  i.extras ||= [];
+  i.quantity ??=1;
+  i.unitPrice ??= PRICE.roman[i.style]?.rate||0;
+  i.overridePrice||="";
+  i.itemNote||="";
+  i.showPricing ??=true;
+  i.hasFlaps ??= false;
+  i.flapsPrice ??= 0;
+  i.hasValance ??= false;
+  i.valancePrice ??= 0;
+  i.valanceQty ??= 1;
 
-function pillowForm(i){
-  i.style ||= "Plain"; i.size ||= "18"; i.extras ||= []; i.quantity ??=1; i.customPrice ??=0; i.overridePrice||=""; i.itemNote||=""; i.patternMatchCharge ??=10; i.showPricing ??=true;
-  const base = PRICE.pillow[i.style]?.[i.size] ?? 0;
   return `
-  <div class="grid grid-3">
-    <label>Pillow Style<select class="f-style">${options(Object.keys(PRICE.pillow),i.style)}</select></label>
-    <label>Size<select class="f-size">${options(["18","20","22","Custom"],i.size)}</select></label>
-    <label>Base Price Each<input class="f-unit-price" type="number" min="0" step="0.01" value="${i.size==="Custom"?(i.customPrice||0):base}"></label>
+  <div class="workflow-label">MOUNT</div>
+  <div class="segmented-choice roman-mount-choice">
+    <label class="${i.mount==="Inside Mount"?"selected":""}">
+      <input type="radio" class="f-mount" name="mount-${i.id||""}" value="Inside Mount" ${i.mount==="Inside Mount"?"checked":""}>
+      <span>Inside Mount</span>
+    </label>
+    <label class="${i.mount==="Outside Mount"?"selected":""}">
+      <input type="radio" class="f-mount" name="mount-${i.id||""}" value="Outside Mount" ${i.mount==="Outside Mount"?"checked":""}>
+      <span>Outside Mount</span>
+    </label>
   </div>
-  <div class="subsection"><div class="subsection-head"><h4>Extras</h4><span class="muted">Select multiple</span></div><div class="choice-grid">${checkChips(PILLOW_EXTRAS,i.extras)}</div></div>
-  ${i.extras.includes("Pattern Matching")?`<label>Pattern Match Charge Per Pillow<input class="f-pattern-charge" type="number" min="0" step="0.01" value="${i.patternMatchCharge}"></label>`:""}
+
+  <div class="workflow-label">MEASUREMENTS</div>
+  <div class="grid grid-3">
+    <label>FW
+      <div class="inch-field"><input class="f-fw" type="number" min="0" step="0.25" value="${i.fw}"><span>"</span></div>
+    </label>
+    <label>FL
+      <div class="inch-field"><input class="f-fl" type="number" min="0" step="0.25" value="${i.fl}"><span>"</span></div>
+    </label>
+    <label>Proj
+      <div class="inch-field"><input class="f-proj" type="number" min="0" step="0.25" value="${i.proj}"><span>"</span></div>
+    </label>
+  </div>
+
+  <div class="workflow-label">SHADE STYLE</div>
+  <div class="grid grid-2">
+    <label>Roman Style
+      <select class="f-style">${options(Object.keys(PRICE.roman),i.style)}</select>
+    </label>
+    <label>Price Per Sq. Ft.
+      <input class="f-unit-price" type="number" min="0" step="0.01" value="${i.unitPrice}">
+    </label>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-head">
+      <h4>Flaps / Valance</h4>
+      <span class="muted">Toggle and regulate the price</span>
+    </div>
+    <div class="roman-addon-grid">
+      <div class="roman-addon-card ${i.hasFlaps?"selected":""}">
+        <label class="roman-addon-toggle">
+          <input type="checkbox" class="f-has-flaps" ${i.hasFlaps?"checked":""}>
+          <span>Flaps</span>
+        </label>
+        ${i.hasFlaps?`
+          <label>Flaps Price
+            <div class="charge-input"><span>$</span><input class="f-flaps-price" type="number" min="0" step="0.01" value="${i.flapsPrice}"></div>
+          </label>
+        `:""}
+      </div>
+      <div class="roman-addon-card ${i.hasValance?"selected":""}">
+        <label class="roman-addon-toggle">
+          <input type="checkbox" class="f-has-valance" ${i.hasValance?"checked":""}>
+          <span>Valance</span>
+        </label>
+        ${i.hasValance?`
+          <div class="grid grid-2 compact-addon-grid">
+            <label>Valance Price
+              <div class="charge-input"><span>$</span><input class="f-valance-price" type="number" min="0" step="0.01" value="${i.valancePrice}"></div>
+            </label>
+            <label>Valance Q
+              <input class="f-valance-qty" type="number" min="1" step="1" value="${i.valanceQty}">
+            </label>
+          </div>
+        `:""}
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-head"><h4>Lift / Motor / Extras</h4><span class="muted">Select multiple</span></div>
+    <div class="choice-grid">${checkChips(ROMAN_EXTRAS,i.extras)}</div>
+    <div class="roman-rate-note">Motorized $450 · Rowley Lift $75 · Cordless $120 · Continuous Cord $100</div>
+  </div>
+
   <label>Item Description / Custom Note<textarea class="f-item-note" rows="2">${esc(i.itemNote)}</textarea></label>
+
   <div class="grid grid-2">
     <label>Quantity (entered last)<input class="f-quantity" type="number" min="1" step="1" value="${i.quantity}"></label>
     <label>Override Final Price<input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional"></label>
   </div>
-  <div class="toggle-row"><label class="toggle"><input type="checkbox" class="f-show-pricing" ${i.showPricing?"checked":""}> Show pricing details</label><span class="muted">Zipper +$10; Turkish / box +$10</span></div>
+
+  <div class="toggle-row">
+    <label class="toggle"><input type="checkbox" class="f-show-pricing" ${i.showPricing?"checked":""}> Show size / pricing details</label>
+    <span class="muted">Sq. ft. rounds to nearest 0.25</span>
+  </div>
   `;
 }
+function pillowForm(i){
+  i.style ||= "Plain";
+  i.size ||= "18";
+  i.extras ||= [];
+  i.quantity ??=1;
+  i.customPrice ??=0;
+  i.overridePrice||="";
+  i.itemNote||="";
+  i.matchPrintCharge ??=10;
+  i.showPricing ??=true;
+  i.zipper ??= true;
+  i.hasTrim ??= false;
+  i.trimPosition ||= "Outside";
+  i.trimHandSewn ??= false;
+  i.trimCharge ??= 0;
+  i.hasCord ??= false;
+  i.cordType ||= "Ruffle Cord";
+  i.cordCharge ??= 0;
 
+  const base = PRICE.pillow[i.style]?.[i.size] ?? 0;
+
+  return `
+  <div class="workflow-label">ZIPPER</div>
+  <div class="segmented-choice zipper-choice">
+    <label class="${i.zipper?"selected":""}">
+      <input type="radio" class="f-zipper-choice" name="zipper-${i.id||""}" value="yes" ${i.zipper?"checked":""}>
+      <span>Zipper</span>
+    </label>
+    <label class="${!i.zipper?"selected":""}">
+      <input type="radio" class="f-zipper-choice" name="zipper-${i.id||""}" value="no" ${!i.zipper?"checked":""}>
+      <span>No Zipper</span>
+    </label>
+  </div>
+
+  <div class="workflow-label">PILLOW</div>
+  <div class="grid grid-3">
+    <label>Pillow Style
+      <select class="f-style">${options(["Plain","Flange","Self Cord","Brush Fringe","Contrast Flange","Ruffle Cord","Bolster","Custom"],i.style)}</select>
+    </label>
+    <label>Size
+      <select class="f-size">${options(["18","20","22","Custom"],i.size)}</select>
+    </label>
+    <label>Base Price Each
+      <input class="f-unit-price" type="number" min="0" step="0.01" value="${i.size==="Custom"?(i.customPrice||0):base}">
+    </label>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-head"><h4>Trim</h4><span class="muted">Optional</span></div>
+    <label class="feature-toggle-card ${i.hasTrim?"selected":""}">
+      <input type="checkbox" class="f-has-trim" ${i.hasTrim?"checked":""}>
+      <span>Add Trim</span>
+    </label>
+    ${i.hasTrim?`
+      <div class="pillow-detail-panel">
+        <div class="segmented-choice trim-position-choice">
+          <label class="${i.trimPosition==="Outside"?"selected":""}">
+            <input type="radio" class="f-trim-position" name="trim-${i.id||""}" value="Outside" ${i.trimPosition==="Outside"?"checked":""}>
+            <span>Outside</span>
+          </label>
+          <label class="${i.trimPosition==="Inside"?"selected":""}">
+            <input type="radio" class="f-trim-position" name="trim-${i.id||""}" value="Inside" ${i.trimPosition==="Inside"?"checked":""}>
+            <span>Inside</span>
+          </label>
+        </div>
+        <div class="grid grid-2 compact-top">
+          <label class="feature-toggle-card inline-toggle">
+            <input type="checkbox" class="f-trim-hand-sewn" ${i.trimHandSewn?"checked":""}>
+            <span>Hand Sewn</span>
+          </label>
+          <label>Trim Charge
+            <div class="charge-input"><span>$</span><input class="f-trim-charge" type="number" min="0" step="0.01" value="${i.trimCharge}"></div>
+          </label>
+        </div>
+      </div>
+    `:""}
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-head"><h4>Cord</h4><span class="muted">Optional</span></div>
+    <label class="feature-toggle-card ${i.hasCord?"selected":""}">
+      <input type="checkbox" class="f-has-cord" ${i.hasCord?"checked":""}>
+      <span>Add Cord</span>
+    </label>
+    ${i.hasCord?`
+      <div class="pillow-detail-panel grid grid-2">
+        <label>Cord Type
+          <select class="f-cord-type">${options(["Ruffle Cord","Sheer Cord","Mini","Small","Large","Big","Jumbo"],i.cordType)}</select>
+        </label>
+        <label>Cord Charge
+          <div class="charge-input"><span>$</span><input class="f-cord-charge" type="number" min="0" step="0.01" value="${i.cordCharge}"></div>
+        </label>
+      </div>
+    `:""}
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-head"><h4>Extras</h4><span class="muted">Select multiple</span></div>
+    <div class="choice-grid">${checkChips(PILLOW_EXTRAS,i.extras)}</div>
+  </div>
+
+  ${i.extras.includes("Match Print")||i.extras.includes("Pattern Matching")?`
+    <label>Match Print Charge Per Pillow
+      <input class="f-pattern-charge" type="number" min="0" step="0.01" value="${i.matchPrintCharge}">
+    </label>
+  `:""}
+
+  <label>Item Description / Custom Note<textarea class="f-item-note" rows="2">${esc(i.itemNote)}</textarea></label>
+
+  <div class="grid grid-2">
+    <label>Quantity (entered last)<input class="f-quantity" type="number" min="1" step="1" value="${i.quantity}"></label>
+    <label>Override Final Price<input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional"></label>
+  </div>
+
+  <div class="toggle-row">
+    <label class="toggle"><input type="checkbox" class="f-show-pricing" ${i.showPricing?"checked":""}> Show pricing details</label>
+    <span class="muted">Zipper +$10 · 4 Triangles +$10 · trim / cord charges are editable</span>
+  </div>
+  `;
+}
 
 function supplyForm(i){
   i.description ||= "";
@@ -401,11 +592,15 @@ function supplyForm(i){
   i.quantity ??= 1;
   i.overridePrice ||= "";
   i.showPricing ??= true;
+  i.depositRequired ??= true;
+  i.depositPercent ??= 100;
+
   return `
   <div class="workflow-label">SUPPLY ITEM</div>
   <label>Description
     <textarea class="f-description" rows="3" placeholder="Lining, interlining, blackout, hardware, motor, trim, etc.">${esc(i.description)}</textarea>
   </label>
+
   <div class="grid grid-3">
     <label>Quantity
       <input class="f-quantity" type="number" min="0" step="0.25" value="${i.quantity}">
@@ -417,9 +612,23 @@ function supplyForm(i){
       <input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional">
     </label>
   </div>
+
+  <div class="subsection supply-deposit-box">
+    <div class="subsection-head"><h4>Required Deposit</h4><span class="muted">Due before the job starts</span></div>
+    <div class="grid grid-2">
+      <label class="feature-toggle-card ${i.depositRequired?"selected":""}">
+        <input type="checkbox" class="f-deposit-required" ${i.depositRequired?"checked":""}>
+        <span>Deposit Required</span>
+      </label>
+      ${i.depositRequired?`
+        <label>Deposit %
+          <input class="f-deposit-percent" type="number" min="0" max="100" step="1" value="${i.depositPercent}">
+        </label>
+      `:""}
+    </div>
+  </div>
   `;
 }
-
 function customForm(i){
   i.description ||= ""; i.unitPrice ??=0; i.quantity ??=1; i.overridePrice||=""; i.showPricing ??=true;
   return `
@@ -584,7 +793,25 @@ function bindDraperyMeasurements(node,item){
   });
 }
 function bindItemForm(node,item){
-  const bind=(sel,key,convert=v=>v,rerender=false)=>{ const el=$(sel,node); if(!el) return; const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input"; el.addEventListener(evt,e=>{ item[key]=convert(el.type==="checkbox"?el.checked:el.value); if(rerender) renderRooms(); else { updateDraperySurcharges(node,item); renderPriceSummary(node,item); renderPreview(); renderDiscountSummary(); } }); };
+  const bind=(sel,key,convert=v=>v,rerender=false)=>{
+    const el=$(sel,node);
+    if(!el) return;
+    const evt=(el.type==="checkbox"||el.type==="radio"||el.tagName==="SELECT")?"change":"input";
+    el.addEventListener(evt,()=>{
+      const value=el.type==="checkbox" ? el.checked : el.value;
+      item[key]=convert(value);
+      if(rerender){
+        renderRooms();
+        renderPreview();
+        renderDiscountSummary();
+      }else{
+        updateDraperySurcharges(node,item);
+        renderPriceSummary(node,item);
+        renderPreview();
+        renderDiscountSummary();
+      }
+    });
+  };
 
   if(item.type==="drapery"){
     bindDraperyMeasurements(node,item);
@@ -599,16 +826,78 @@ function bindItemForm(node,item){
     bind(".f-fanfold-charge","fanfoldCharge",num);
     bind(".f-pin","pin",Boolean,true);
     bind(".f-pin-charge","pinCharge",num);
-  }else{
-    bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num); bind(".f-fl","fl",num); bind(".f-fw","fw",num); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
   }
 
-  $$(".extra-check",node).forEach(ch=>ch.addEventListener("change",()=>{ item.extras=$$(".extra-check:checked",node).map(x=>x.value); renderRooms(); renderPreview(); }));
+  if(item.type==="roman"){
+    $$(".f-mount",node).forEach(r=>r.addEventListener("change",()=>{
+      if(r.checked){ item.mount=r.value; renderRooms(); renderPreview(); renderDiscountSummary(); }
+    }));
+    bind(".f-style","style",v=>v,true);
+    bind(".f-fw","fw",num);
+    bind(".f-fl","fl",num);
+    bind(".f-proj","proj",num);
+    bind(".f-unit-price","unitPrice",num);
+    bind(".f-quantity","quantity",num);
+    bind(".f-override","overridePrice",v=>v===""?"":num(v));
+    bind(".f-item-note","itemNote");
+    bind(".f-show-pricing","showPricing",Boolean,true);
+    bind(".f-has-flaps","hasFlaps",Boolean,true);
+    bind(".f-flaps-price","flapsPrice",num);
+    bind(".f-has-valance","hasValance",Boolean,true);
+    bind(".f-valance-price","valancePrice",num);
+    bind(".f-valance-qty","valanceQty",v=>Math.max(1,num(v)||1));
+  }
+
+  if(item.type==="pillow"){
+    $$(".f-zipper-choice",node).forEach(r=>r.addEventListener("change",()=>{
+      if(r.checked){ item.zipper=r.value==="yes"; renderRooms(); renderPreview(); renderDiscountSummary(); }
+    }));
+    $$(".f-trim-position",node).forEach(r=>r.addEventListener("change",()=>{
+      if(r.checked){ item.trimPosition=r.value; renderRooms(); renderPreview(); }
+    }));
+    bind(".f-style","style",v=>v,true);
+    bind(".f-size","size",v=>v,true);
+    bind(".f-unit-price","unitPrice",num);
+    bind(".f-quantity","quantity",num);
+    bind(".f-override","overridePrice",v=>v===""?"":num(v));
+    bind(".f-item-note","itemNote");
+    bind(".f-show-pricing","showPricing",Boolean,true);
+    bind(".f-pattern-charge","matchPrintCharge",num);
+    bind(".f-has-trim","hasTrim",Boolean,true);
+    bind(".f-trim-hand-sewn","trimHandSewn",Boolean,true);
+    bind(".f-trim-charge","trimCharge",num);
+    bind(".f-has-cord","hasCord",Boolean,true);
+    bind(".f-cord-type","cordType",v=>v,true);
+    bind(".f-cord-charge","cordCharge",num);
+  }
+
+  if(item.type==="supply"){
+    bind(".f-description","description");
+    bind(".f-quantity","quantity",num);
+    bind(".f-unit-price","unitPrice",num);
+    bind(".f-override","overridePrice",v=>v===""?"":num(v));
+    bind(".f-deposit-required","depositRequired",Boolean,true);
+    bind(".f-deposit-percent","depositPercent",num);
+  }
+
+  if(item.type==="custom"){
+    bind(".f-description","description");
+    bind(".f-quantity","quantity",num);
+    bind(".f-unit-price","unitPrice",num);
+    bind(".f-override","overridePrice",v=>v===""?"":num(v));
+  }
+
+  $$(".extra-check",node).forEach(ch=>ch.addEventListener("change",()=>{
+    item.extras=$$(".extra-check:checked",node).map(x=>x.value);
+    renderRooms();
+    renderPreview();
+    renderDiscountSummary();
+  }));
 }
 function draperyCalc(i){
   const measurements=ensureDraperyMeasurements(i);
   const globalPct =
-    ((i.extras||[]).includes("Pattern Matching") ? 20 : 0) +
+    (((i.extras||[]).includes("Match Print") || (i.extras||[]).includes("Pattern Matching")) ? 20 : 0) +
     ((i.lining==="Bump" || (i.extras||[]).includes("Bump")) ? 20 : 0);
 
   let base=0;
@@ -668,7 +957,7 @@ function draperyCalc(i){
     });
   });
 
-  if((i.extras||[]).includes("Pattern Matching")) reasons.push("Pattern matching: +20%");
+  if((i.extras||[]).includes("Match Print") || (i.extras||[]).includes("Pattern Matching")) reasons.push("Match print: +20%");
   if(i.lining==="Bump" || (i.extras||[]).includes("Bump")) reasons.push("Bump: +20%");
 
   const finishingCharges =
@@ -696,38 +985,70 @@ function draperyCalc(i){
 function romanCalc(i){
   const sqftRaw=(num(i.fw)*num(i.fl))/144;
   const sqft=roundQuarter(sqftRaw);
-  let pct=0; const reasons=[]; const maxDim=Math.max(num(i.fw),num(i.fl));
-  if(maxDim>=80){pct=100;reasons.push("Either dimension 80\"+: +100% (double)");}
-  else if(maxDim>=60){pct=20;reasons.push("Either dimension 60–79\": +20%");}
-  let each = sqft*num(i.unitPrice)*(1+pct/100);
-  const extras=i.extras||[]; let extrasEach=0;
-  if(extras.includes("Motorized")) extrasEach += num(i.motorCost||300);
-  if(extras.includes("Rowley Lifting System")) extrasEach += 50;
-  if(extras.includes("Cordless Lifting System")) extrasEach += 75;
-  if(extras.includes("Continuous Cord System")) extrasEach += 100;
-  if(extras.includes("Stabilizing Fabric")) extrasEach += sqft*2;
-  if(extras.includes("Tailored Valance")) extrasEach += 20;
-  each += extrasEach;
-  const calculated = each*Math.max(1,num(i.quantity));
-  const final = i.overridePrice!=="" ? num(i.overridePrice) : calculated;
+  let pct=0;
+  const reasons=[];
+  const maxDim=Math.max(num(i.fw),num(i.fl));
+
+  if(maxDim>=80){ pct=100; reasons.push('Either dimension 80"+: +100% (double)'); }
+  else if(maxDim>=60){ pct=20; reasons.push('Either dimension 60–79": +20%'); }
+
+  let each=sqft*num(i.unitPrice)*(1+pct/100);
+  const extras=i.extras||[];
+  let extrasEach=0;
+
+  if(extras.includes("Motorized")) extrasEach+=450;
+  if(extras.includes("Rowley Lifting System")) extrasEach+=75;
+  if(extras.includes("Cordless Lifting System")) extrasEach+=120;
+  if(extras.includes("Continuous Cord System")) extrasEach+=100;
+  if(extras.includes("Stabilizing Fabric")) extrasEach+=sqft*2;
+
+  if(i.hasFlaps) extrasEach+=num(i.flapsPrice);
+  if(i.hasValance) extrasEach+=num(i.valancePrice)*Math.max(1,num(i.valanceQty)||1);
+
+  each+=extrasEach;
+  const calculated=each*Math.max(1,num(i.quantity));
+  const final=i.overridePrice!==""?num(i.overridePrice):calculated;
   return {sqftRaw,sqft,pct,reasons,extrasEach,calculated,final};
 }
-
 function pillowCalc(i){
-  const size = i.size==="Custom"?"18":i.size;
-  let baseEach = num(i.unitPrice);
-  let extraEach=0; const reasons=[]; const ex=i.extras||[];
-  if(ex.includes("Zipper")){extraEach+=10;reasons.push("Zipper +$10");}
-  if(ex.includes("Turkish Corners")){extraEach+=10;reasons.push("Turkish corners +$10");}
-  if(ex.includes("Box Construction")){extraEach+=10;reasons.push("Box construction +$10");}
-  if(ex.includes("Cut Down Pillow Form")){extraEach+=10;reasons.push("Cut down pillow form +$10");}
-  if(ex.includes("Custom Pillow Form")){extraEach+=10;reasons.push("Custom pillow form +$10");}
-  if(ex.includes("Pattern Matching")){extraEach+=num(i.patternMatchCharge||10);reasons.push(`Pattern matching +${money(i.patternMatchCharge||10)}`);}
+  const baseEach=num(i.unitPrice);
+  let extraEach=0;
+  const reasons=[];
+  const ex=i.extras||[];
+
+  if(i.zipper){ extraEach+=10; reasons.push("Zipper +$10"); }
+  if(ex.includes("Turkish Corners")){ extraEach+=10; reasons.push("Turkish corners +$10"); }
+  if(ex.includes("4 Triangles")){ extraEach+=10; reasons.push("4 triangles +$10"); }
+  if(ex.includes("Cut Down Pillow Form")){ extraEach+=10; reasons.push("Cut down pillow form +$10"); }
+  if(ex.includes("Custom Pillow Form")){ extraEach+=10; reasons.push("Custom pillow form +$10"); }
+
+  if(ex.includes("Match Print") || ex.includes("Pattern Matching")){
+    const charge=num(i.matchPrintCharge||10);
+    extraEach+=charge;
+    reasons.push(`Match print +${money(charge)}`);
+  }
+
+  if(i.hasTrim){
+    extraEach+=num(i.trimCharge);
+    reasons.push(`Trim (${i.trimPosition||"Outside"}${i.trimHandSewn?", hand sewn":""}) +${money(num(i.trimCharge))}`);
+  }
+
+  if(i.hasCord){
+    extraEach+=num(i.cordCharge);
+    reasons.push(`${i.cordType||"Cord"} +${money(num(i.cordCharge))}`);
+  }
+
   const calculated=(baseEach+extraEach)*Math.max(1,num(i.quantity));
   const final=i.overridePrice!==""?num(i.overridePrice):calculated;
   return {baseEach,extraEach,reasons,calculated,final};
 }
-function supplyCalc(i){ const calculated=num(i.unitPrice)*Math.max(0,num(i.quantity)); return {calculated,final:i.overridePrice!==""?num(i.overridePrice):calculated}; }
+function supplyCalc(i){
+  const calculated=num(i.unitPrice)*Math.max(0,num(i.quantity));
+  const final=i.overridePrice!==""?num(i.overridePrice):calculated;
+  const depositPercent=i.depositRequired===false?0:Math.max(0,Math.min(100,num(i.depositPercent ?? 100)));
+  const depositDue=final*(depositPercent/100);
+  return {calculated,final,depositPercent,depositDue};
+}
 function customCalc(i){ const calculated=num(i.unitPrice)*Math.max(1,num(i.quantity)); return {calculated,final:i.overridePrice!==""?num(i.overridePrice):calculated}; }
 function calcItem(i){ return i.type==="drapery"?draperyCalc(i):i.type==="roman"?romanCalc(i):i.type==="pillow"?pillowCalc(i):i.type==="supply"?supplyCalc(i):customCalc(i); }
 
@@ -748,7 +1069,7 @@ function renderPriceSummary(node,item){
   `;
   if(item.type==="roman") details=`<div>Sq. ft.: ${c.sqftRaw.toFixed(4)} → <strong>${c.sqft.toFixed(2)}</strong></div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Extras per shade: ${money(c.extrasEach)}</div>`;
   if(item.type==="pillow") details=`<div>Base each: ${money(c.baseEach)}</div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Extras each: ${money(c.extraEach)}</div>`;
-  if(item.type==="supply") details=`<div>Supply line item</div>`;
+  if(item.type==="supply") details=`<div>Supply line item</div><div>Required deposit: <strong>${c.depositPercent}% = ${money(c.depositDue)}</strong></div>`;
   if(item.type==="custom") details=`<div>Manual line item</div>`;
   box.innerHTML=`<div class="total-line"><span>Calculated</span><strong>${money(c.calculated)}</strong></div>${item.overridePrice!==""?`<div class="total-line"><span>Override in use</span><strong>${money(c.final)}</strong></div>`:""}<div class="pricing-detail ${item.showPricing===false?"hidden":""}">${details}</div>`;
 }
@@ -783,7 +1104,7 @@ function itemDescription(i){
     if(i.pin) bits.push("Pin");
 
     (i.extras||[]).forEach(x=>{
-      if(x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
+      if((x==="Match Print" || x==="Pattern Matching") && c.reasons.some(r=>r.toLowerCase().includes("match print"))) return;
       bits.push(x);
     });
 
@@ -792,19 +1113,43 @@ function itemDescription(i){
   }
   if(i.type==="roman"){
     const c=romanCalc(i);
-    const bits=[i.style||"Roman Shade",`FW-${num(i.fw)||""}", FL-${num(i.fl)||""}" [${c.sqft.toFixed(2)} sq. ft.]`];
-    c.reasons.forEach(r=>bits.push(r));
-    (i.extras||[]).forEach(x=>bits.push(x));
+    const measurements=`FW-${num(i.fw)||""}", FL-${num(i.fl)||""}"${i.proj!==""&&i.proj!=null?`, Proj-${num(i.proj)||""}"`:""} [${c.sqft.toFixed(2)} sq. ft.]`;
+    const bits=[i.style||"Roman Shade",i.mount||"Inside Mount",measurements];
+
+    if(i.hasFlaps) bits.push("Flaps");
+    if(i.hasValance) bits.push(`Valance${num(i.valanceQty)>1?` — Q ${num(i.valanceQty)}`:""}`);
+
+    (i.extras||[]).forEach(x=>bits.push(
+      x==="Pattern Match"||x==="Pattern Matching" ? "Match Print" : x
+    ));
+
     if(i.itemNote) bits.push(i.itemNote);
-    return bits.join("\n");
+    return bits.filter(Boolean).join("\n");
   }
+
   if(i.type==="pillow"){
-    const bits=[`${i.size||""}${i.size&&i.size!=="Custom"?'" ':''}${i.style||"Pillow"}`.trim()];
-    (i.extras||[]).forEach(x=>bits.push(x));
+    const bits=[
+      `${i.size||""}${i.size&&i.size!=="Custom"?'" ':''}${i.style||"Pillow"}`.trim(),
+      i.zipper ? "Zipper" : "No Zipper"
+    ];
+
+    if(i.hasTrim) bits.push(`Trim — ${i.trimPosition||"Outside"}${i.trimHandSewn?", Hand Sewn":""}`);
+    if(i.hasCord) bits.push(`Cord — ${i.cordType||"Cord"}`);
+
+    (i.extras||[]).forEach(x=>bits.push(
+      x==="Pattern Matching" ? "Match Print" :
+      x==="Box Construction" ? "4 Triangles" :
+      x
+    ));
+
     if(i.itemNote) bits.push(i.itemNote);
-    return bits.join("\n");
+    return bits.filter(Boolean).join("\n");
   }
-  if(i.type==="supply") return i.description||"Supply";
+
+  if(i.type==="supply"){
+    const c=supplyCalc(i);
+    return `${i.description||"Supply"}${i.depositRequired===false?"":`\nRequired Deposit: ${c.depositPercent}%`}`;
+  }
   return i.description||"Custom item";
 }
 function itemUnitPrice(i){
@@ -831,15 +1176,18 @@ function discountCalc(subtotal){
   return {type,raw,amount,display,label};
 }
 function invoiceBuckets(){
-  let labor=0, supply=0;
+  let labor=0, supply=0, requiredDeposit=0;
   state.rooms.forEach(r=>r.items.forEach(i=>{
     const val=calcItem(i).final;
-    if(i.type==="supply") supply+=val;
-    else labor+=val;
+    if(i.type==="supply"){
+      supply+=val;
+      requiredDeposit+=supplyCalc(i).depositDue;
+    }else{
+      labor+=val;
+    }
   }));
-  return {labor,supply};
+  return {labor,supply,requiredDeposit};
 }
-
 function renderDiscountSummary(){
   const box=$("#discountSummary");
   if(!box) return;
@@ -856,13 +1204,13 @@ function renderDiscountSummary(){
 
 function renderPreview(){
   const c=selectedClient()||{}; const docType=state.docType; const date=$("#docDate").value; const invoiceNo=$("#invoiceNumber").value; const addr=$("#projectAddress").value;
-  let labor=0, supply=0;
+  let labor=0, supply=0, requiredDeposit=0;
   const rows=[];
   state.rooms.forEach(room=>{
     let first=true;
     room.items.forEach(i=>{
       const calc=calcItem(i);
-      if(i.type==="supply") supply+=calc.final; else labor+=calc.final;
+      if(i.type==="supply"){ supply+=calc.final; requiredDeposit+=supplyCalc(i).depositDue; } else labor+=calc.final;
       const desc=`${first?`<div class="room-title">${esc(room.name||"Untitled Room")}</div>`:""}${esc(itemDescription(i)).replace(/\n/g,"<br>")}${first&&room.notes?`<br><span>${esc(room.notes)}</span>`:""}`;
       const displayQty = i.type==="drapery" ? (calc.totalQty||1) : (num(i.quantity)||1);
       rows.push(`<tr><td class="invoice-number-cell">${displayQty}</td><td class="invoice-desc">${desc}</td><td class="invoice-money-cell">${money(itemUnitPrice(i))}</td><td class="invoice-money-cell">${money(calc.final)}</td></tr>`); first=false;
@@ -876,18 +1224,18 @@ function renderPreview(){
       <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.name||"")}</div><div>Phone: ${esc(formatPhone(clientPhone1(c)))}</div><div>Email: ${esc(clientEmail1(c))}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
     </div>
     <table class="invoice-table"><thead><tr><th>Quantity</th><th>Description</th><th>Price Per Unit</th><th>Final Price</th></tr></thead><tbody>${rows.join("")||`<tr><td>&nbsp;</td><td class="invoice-desc">Add rooms and items to begin.</td><td></td><td></td></tr>`}</tbody></table>
-    <div class="invoice-bottom"><div><div>Check Make to: Inna Boyarskiy</div><div>Venmo: @Inna_Boyarskiy</div><div>Cash App: $InnaBoyarskiy</div></div><div class="totals"><div class="total-row"><span>Supply:</span><span>${money(supply)}</span></div><div class="total-row"><span>Labor:</span><span>${money(labor)}</span></div><div class="total-row"><span>Installation:</span><span>${money(install)}</span></div>${discount.amount?`<div class="total-row discount-row"><span>${esc(discount.label)}${discount.type==="percent"?` (${discount.raw}%)`:""}:</span><span>-${money(discount.amount)}</span></div>`:""}<div class="total-row subtotal-row"><span>Subtotal:</span><span>${money(subtotal)}</span></div><div class="total-row grand"><span>Total:</span><span>${money(total)}</span></div></div></div>
+    <div class="invoice-bottom"><div><div>Check Make to: Inna Boyarskiy</div><div>Venmo: @Inna_Boyarskiy</div><div>Cash App: $InnaBoyarskiy</div></div><div class="totals"><div class="total-row"><span>Supply:</span><span>${money(supply)}</span></div><div class="total-row"><span>Labor:</span><span>${money(labor)}</span></div><div class="total-row"><span>Installation:</span><span>${money(install)}</span></div>${requiredDeposit>0?`<div class="total-row deposit-row"><span>Required Deposit:</span><span>${money(requiredDeposit)}</span></div>`:""}${discount.amount?`<div class="total-row discount-row"><span>${esc(discount.label)}${discount.type==="percent"?` (${discount.raw}%)`:""}:</span><span>-${money(discount.amount)}</span></div>`:""}<div class="total-row subtotal-row"><span>Subtotal:</span><span>${money(subtotal)}</span></div><div class="total-row grand"><span>Total:</span><span>${money(total)}</span></div></div></div>
   </div>`;
 }
 function formatDate(v){ if(!v) return ""; const d=new Date(v+"T00:00:00"); return d.toLocaleDateString("en-US"); }
 
 function collectInvoice(){
   const c=selectedClient()||{};
-  const {labor,supply}=invoiceBuckets();
+  const {labor,supply,requiredDeposit}=invoiceBuckets();
   const install=num($("#installationTotal").value);
   const subtotal=supply+labor+install;
   const discount=discountCalc(subtotal);
-  return {id:uid("inv"),clientId:c.id,clientName:c.name,invoiceNumber:$("#invoiceNumber").value,description:state.rooms.map(r=>r.name).filter(Boolean).join(" / ")||"Project",status:$("#invoiceStatus").value,date:$("#docDate").value,total:subtotal-discount.amount,subtotal,supply,labor,installation:install,discount:{type:discount.type,value:discount.raw,amount:discount.amount,label:discount.label},docType:state.docType,projectAddress:$("#projectAddress").value,rooms:JSON.parse(JSON.stringify(state.rooms))};
+  return {id:uid("inv"),clientId:c.id,clientName:c.name,invoiceNumber:$("#invoiceNumber").value,description:state.rooms.map(r=>r.name).filter(Boolean).join(" / ")||"Project",status:$("#invoiceStatus").value,date:$("#docDate").value,total:subtotal-discount.amount,subtotal,supply,labor,installation:install,requiredDeposit,discount:{type:discount.type,value:discount.raw,amount:discount.amount,label:discount.label},docType:state.docType,projectAddress:$("#projectAddress").value,rooms:JSON.parse(JSON.stringify(state.rooms))};
 }
 
 function renderClientsList(){

@@ -44,10 +44,10 @@ Data is currently stored in browser localStorage for this mock version.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
 
-V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
+V3.12: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
 
 
-## V3.11 update
+## V3.12 update
 - FL can now be toggled on/off for each drapery line item.
 - When FL is off, no finished-length surcharge is applied and FL is omitted from the invoice description.
 - Added optional Return measurement toggle. When enabled it prints as R-#".
@@ -55,7 +55,7 @@ V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Return and Overlap are informational measurements only and do not automatically change pricing.
 
 
-## V3.11 update
+## V3.12 update
 - Drapery items can now contain multiple measurement sets under the same room/style.
 - Use “+ Add Another Measurement” to add a second, third, etc. full measurement row.
 - Each measurement row has its own:
@@ -73,7 +73,7 @@ V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Additional measurement rows can be removed without deleting the whole drapery item.
 
 
-## V3.11 fixes
+## V3.12 fixes
 - “+ Add Another Measurement” now duplicates the entire previous measurement row.
 - The copied row includes:
   - Quantity
@@ -87,7 +87,7 @@ V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Removed the accidental duplicated “Return” label.
 
 
-## V3.11 updates
+## V3.12 updates
 - Added `L/I` to the Drapery Lining dropdown.
 - L/I remains uppercase in the printed invoice description.
 - FL is now always available for drapery measurements.
@@ -99,7 +99,7 @@ V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Toggle changes also sync all other measurement values first, preventing typed entries from disappearing.
 
 
-## V3.11 updates
+## V3.12 updates
 - Drapery Style dropdown now uses:
   - Pinch Pleat
   - Euro Pleat
@@ -124,3 +124,33 @@ V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Mobile PDF printing now forces the top company information and estimate/invoice information into two columns, matching the desktop print layout.
 - Mobile print also forces the invoice table and bottom payment/totals area to keep their desktop proportions.
 - Drapery invoice Quantity now totals all measurement-row quantities in that drapery item.
+
+
+## V3.12 updates
+
+### Roman Shades
+- Inside Mount / Outside Mount selector.
+- FW, FL, then Proj.
+- Flaps toggle with editable Flaps Price.
+- Valance toggle with editable Valance Price and Valance Q.
+- Motorized = $450.
+- Rowley Lifting System = $75.
+- Cordless Lifting System = $120.
+- Continuous Cord System = $100.
+- Roman square footage still rounds to the nearest 0.25 sq. ft.
+
+### Pillows
+- Zipper / No Zipper selector before style.
+- Styles: Plain, Flange, Self Cord, Brush Fringe, Contrast Flange, Ruffle Cord, Bolster, Custom.
+- Trim toggle with Outside / Inside, Hand Sewn, and editable Trim Charge.
+- Cord toggle with Ruffle Cord, Sheer Cord, Mini, Small, Large, Big, Jumbo, plus editable Cord Charge.
+- Box Construction replaced by 4 Triangles.
+
+### Terminology
+- New controls use Match Print instead of Pattern Matching.
+- Old saved Pattern Matching jobs remain compatible.
+
+### Supply
+- Supply defaults to a required 100% deposit.
+- Deposit percentage is editable.
+- Required deposit prints on the supply line and in the invoice totals.

@@ -454,3 +454,44 @@ input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
 @media(max-width:620px){
   .finishing-charge-grid{grid-template-columns:1fr;}
 }
+
+
+/* ---------- V3.12 Roman / Pillow / Supply ---------- */
+.segmented-choice{
+  display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px;
+}
+.segmented-choice label{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:38px;padding:8px 13px;border:1px solid #d9cfbf;
+  border-radius:999px;background:#faf7f1;color:#6d675e;
+  font-size:11px;font-weight:800;cursor:pointer;
+}
+.segmented-choice label.selected{color:#fff;border-color:var(--forest);background:var(--forest)}
+.segmented-choice input{position:absolute;opacity:0;pointer-events:none}
+
+.roman-addon-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.roman-addon-card{padding:12px;border:1px solid #d9cfbf;border-radius:11px;background:#fffdf9}
+.roman-addon-card.selected{background:#eef3ed;border-color:#8fa092}
+.roman-addon-toggle{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--forest)}
+.roman-addon-toggle input{width:16px;height:16px;accent-color:var(--forest)}
+.compact-addon-grid{margin-top:10px}
+.roman-rate-note{
+  margin-top:10px;padding:9px 11px;border-left:3px solid var(--gold);
+  background:#fffaf0;color:#6d675e;font-size:10px;font-weight:700
+}
+
+.feature-toggle-card{
+  display:flex;align-items:center;gap:8px;min-height:40px;padding:9px 11px;
+  border:1px solid #d9cfbf;border-radius:9px;background:#fffdf9;
+  font-weight:800;color:var(--forest)
+}
+.feature-toggle-card.selected{border-color:#8fa092;background:#eef3ed}
+.feature-toggle-card input{width:16px;height:16px;accent-color:var(--forest)}
+.feature-toggle-card.inline-toggle{margin-top:6px}
+.pillow-detail-panel{
+  margin-top:10px;padding:11px;border:1px dashed #d7cbbb;
+  border-radius:10px;background:#fbf8f3
+}
+.supply-deposit-box{border-left:4px solid var(--gold)}
+.deposit-row{color:#8a6427;font-weight:700}
+@media(max-width:620px){.roman-addon-grid{grid-template-columns:1fr}}
