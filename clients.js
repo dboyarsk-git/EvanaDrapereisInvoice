@@ -1,6 +1,13 @@
 const $=(s,r=document)=>r.querySelector(s);
 const esc=(s="")=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=n=>`$${(Number(n)||0).toFixed(2)}`;
+function formatPhone(value=""){
+  const digits=String(value).replace(/\D/g,"").slice(0,10);
+  if(digits.length===0) return "";
+  if(digits.length<4) return `(${digits}`;
+  if(digits.length<7) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+}
 const uid=(p="id")=>`${p}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
 const LS_CLIENTS="evana_clients_v1", LS_INVOICES="evana_invoices_v1";
 
@@ -28,8 +35,8 @@ function render(){
       </div>
       <div class="client-detail-grid">
         <div><span>Address</span><strong>${esc(c.address||"—")}</strong></div>
-        <div><span>Phone 1</span><strong>${esc((c.phones||[])[0]||"—")}</strong></div>
-        <div><span>Phone 2</span><strong>${esc((c.phones||[])[1]||"—")}</strong></div>
+        <div><span>Phone 1</span><strong>${esc((c.phones||[])[0]?formatPhone((c.phones||[])[0]):"—")}</strong></div>
+        <div><span>Phone 2</span><strong>${esc((c.phones||[])[1]?formatPhone((c.phones||[])[1]):"—")}</strong></div>
         <div><span>Email 1</span><strong>${esc((c.emails||[])[0]||"—")}</strong></div>
         <div><span>Email 2</span><strong>${esc((c.emails||[])[1]||"—")}</strong></div>
         <div><span>Completed Cash Flow</span><strong>${money(cash)}</strong></div>
@@ -71,4 +78,11 @@ $("#clientPageForm").addEventListener("submit",e=>{
   if(id){clients=clients.map(c=>c.id===id?data:c)}else{clients.push(data)}
   persist(); $("#clientPageDialog").close(); render();
 });
+
+["#pcPhone1","#pcPhone2"].forEach(sel=>{
+  const el=$(sel);
+  if(!el) return;
+  el.addEventListener("input",()=>{ el.value=formatPhone(el.value); });
+});
+
 load();

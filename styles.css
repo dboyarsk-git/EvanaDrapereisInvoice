@@ -193,3 +193,11 @@ input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
 .type-tab[data-type="supply"]{
   border-color:#b89a65;
 }
+
+
+/* ---------- V3.3 invoice description polish ---------- */
+.invoice-table td.description-cell,
+.invoice-table td:nth-child(2){
+  white-space:pre-line;
+  line-height:1.28;
+}

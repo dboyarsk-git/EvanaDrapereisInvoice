@@ -1,8 +1,8 @@
-# Evana Draperies Invoice Builder — V3.2
+# Evana Draperies Invoice Builder — V3.3
 
 GitHub Pages-ready static mockup.
 
-## V3.2 updates
+## V3.3 updates
 - Invoice numbering starts at 691 and auto-increments from saved invoices.
 - Date defaults automatically to today's date.
 - Euro Pinch Pleat is the default drapery style.
@@ -25,7 +25,7 @@ Then open:
 Data is currently stored in browser localStorage for this mock version.
 
 
-## V3.2 update
+## V3.3 update
 - Added editable discount controls at the end of the builder.
 - Discount can be entered as a percentage or flat dollar amount.
 - Custom discount label can be changed (for example: Designer Discount or Courtesy Discount).
@@ -34,7 +34,7 @@ Data is currently stored in browser localStorage for this mock version.
 - Saved invoices store the discount information and completed cash flow uses the final net total.
 
 
-## V3.2 fixes
+## V3.3 fixes
 - Supply is now a normal room item with Quantity, Description, Price Per Unit, and Final Price.
 - Supply items automatically total into the Supply line at the bottom of the invoice.
 - Removed the old Supply Total Override field.
@@ -43,3 +43,13 @@ Data is currently stored in browser localStorage for this mock version.
 - Automatic drapery surcharge badges still update live while dimensions are entered.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
+
+
+## V3.3 fixes
+- Drapery invoice descriptions now display like:
+  - Euro Pinch Pleat (lined)
+  - 1 pair, 1 width, FL-97", FW-66"
+- Automatic surcharge and optional-detail lines continue underneath.
+- Phone numbers display as (xxx) xxx-xxxx on the invoice and Clients page.
+- Phone fields auto-format while typing.
+- Removed the duplicate “Pattern Matching” description line when the automatic +20% pattern-matching surcharge is already shown.

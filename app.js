@@ -400,16 +400,21 @@ function itemDescription(i){
   if(i.type==="drapery"){
     const style=i.style==="Custom"?(i.customStyle||"Custom Drapery"):i.style;
     const c=draperyCalc(i);
+    const liningText = i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined";
+    const piece = String(i.pieceType||"Pair").toLowerCase();
+    const qty = Math.max(1,num(i.quantity)||1);
+    const widths = num(i.widths)||0;
     const bits=[
-      style,
-      i.lining && i.lining!=="No Lining"?i.lining.toLowerCase():"unlined",
-      `${i.quantity||1} ${String(i.pieceType||"Pair").toLowerCase()}${num(i.quantity)>1?"s":""}, ${i.widths||0} width${num(i.widths)===1?"":"s"}`,
-      `FL-${num(i.fl)||""}", FW-${num(i.fw)||""}"`
+      `${style} (${liningText})`,
+      `${qty} ${piece}${qty>1?"s":""}, ${widths} width${widths===1?"":"s"}, FL-${num(i.fl)||""}", FW-${num(i.fw)||""}"`
     ];
     // Show automatic charges underneath as their own lines.
     c.reasons.forEach(r=>bits.push(r));
     // Selected optional details each get their own line — no "Extras:" label.
-    (i.extras||[]).forEach(x=>bits.push(x));
+    (i.extras||[]).forEach(x=>{
+      if(i.type==="drapery" && x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
+      bits.push(x);
+    });
     if(i.itemNote) bits.push(i.itemNote);
     return bits.filter(Boolean).join("\n");
   }
@@ -495,7 +500,7 @@ function renderPreview(){
   $("#invoicePreview").innerHTML=`<div class="invoice-wrap"><div class="watermark"><span>${esc(docType.toUpperCase())}</span></div>
     <div class="invoice-top">
       <div class="invoice-brand"><h1>Evana Draperies</h1><div>8200 Hornwood Ct</div><div>Charlotte NC 28215</div><br><div>Phone: 704-236-6032</div><div>Fax: 704-568-8078</div><div>Email: Evanadraperies1@gmail.com</div></div>
-      <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.name||"")}</div><div>Phone: ${esc((c.phones||[])[0]||"")}</div><div>Email: ${esc((c.emails||[])[0]||"")}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
+      <div class="invoice-doc"><h1>${esc(docType)}</h1><div class="right-block"><div>Date: ${formatDate(date)}</div><div>Invoice # ${esc(invoiceNo||"")}</div><div>Bill To: ${esc(c.name||"")}</div><div>Phone: ${esc(formatPhone((c.phones||[])[0]||""))}</div><div>Email: ${esc((c.emails||[])[0]||"")}</div>${addr?`<div>Project: ${esc(addr)}</div>`:""}</div></div>
     </div>
     <table class="invoice-table"><thead><tr><th>Quantity</th><th>Description</th><th>Price Per Unit</th><th>Final Price</th></tr></thead><tbody>${rows.join("")||`<tr><td>&nbsp;</td><td class="invoice-desc">Add rooms and items to begin.</td><td></td><td></td></tr>`}</tbody></table>
     <div class="invoice-bottom"><div><div>Check Make to: Inna Boyarskiy</div><div>Venmo: @Inna_Boyarskiy</div><div>Cash App: $InnaBoyarskiy</div></div><div class="totals"><div class="total-row"><span>Supply:</span><span>${money(supply)}</span></div><div class="total-row"><span>Labor:</span><span>${money(labor)}</span></div><div class="total-row"><span>Installation:</span><span>${money(install)}</span></div>${discount.amount?`<div class="total-row discount-row"><span>${esc(discount.label)}${discount.type==="percent"?` (${discount.raw}%)`:""}:</span><span>-${money(discount.amount)}</span></div>`:""}<div class="total-row subtotal-row"><span>Subtotal:</span><span>${money(subtotal)}</span></div><div class="total-row grand"><span>Total:</span><span>${money(total)}</span></div></div></div>
@@ -562,6 +567,16 @@ $("#saveInvoiceBtn").addEventListener("click",()=>{
   renderPreview();
 });
 $("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
+
+
+["#cPhone1","#cPhone2"].forEach(sel=>{
+  const el=$(sel);
+  if(!el) return;
+  el.addEventListener("input",()=>{
+    const pos=el.selectionStart;
+    el.value=formatPhone(el.value);
+  });
+});
 
 seed();
 renderDiscountSummary();
