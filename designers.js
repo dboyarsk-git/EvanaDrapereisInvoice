@@ -7,19 +7,71 @@ const LS_CLIENTS="evana_clients_v1", LS_INVOICES="evana_invoices_v1";
 function formatPhone(value=""){const d=String(value||"").replace(/\D/g,"").slice(0,10);if(!d)return "";if(d.length<4)return `(${d}`;if(d.length<7)return `(${d.slice(0,3)}) ${d.slice(3)}`;return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;}
 function normalizeDesigner(c={}){const phones=Array.isArray(c.phones)?c.phones:[c.phone1||c.clientPhone1||c.phone||"",c.phone2||c.clientPhone2||""];const emails=Array.isArray(c.emails)?c.emails:[c.email1||c.clientEmail1||c.email||"",c.email2||c.clientEmail2||""];return {...c,id:c.id||uid("designer"),name:c.name||c.companyName||c.clientName||"",contact:c.contact||c.contactName||"",address:c.address||c.projectAddress||c.billingAddress||"",phones:[formatPhone(phones[0]||""),formatPhone(phones[1]||"")],emails:[emails[0]||"",emails[1]||""],notes:c.notes||""};}
 let clients=[],invoices=[],lastLoadedBundleStamp="";
+
+const IMPORTED_DESIGNERS_V318=[
+  {id:"designer_import_michelle_mcswain",name:"Michelle McSwain",contact:"",address:"",phones:["(704) 691-4314",""],emails:["michellemcswain29@yahoo.com",""],notes:""},
+  {id:"designer_import_clarissa_michael",name:"Clarissa + Michael",contact:"",address:"",phones:["(917) 575-7710",""],emails:["",""],notes:"Email not provided."},
+  {id:"designer_import_new_old_mary_ludemann",name:"New Old",contact:"Mary Ludemann",address:"",phones:["(407) 267-4450",""],emails:["mary@newold.com",""],notes:""},
+  {id:"designer_import_beth_lomas",name:"Beth Lomas",contact:"",address:"",phones:["(704) 771-6370",""],emails:["Lomasinteriors@gmail.com",""],notes:""},
+  {id:"designer_import_philip_mchugh",name:"Philip McHugh",contact:"",address:"",phones:["(704) 421-4644",""],emails:["",""],notes:"Email: TBD"},
+  {id:"designer_import_lauren_casella",name:"Lauren Casella",contact:"",address:"",phones:["(704) 604-5515",""],emails:["Lauren.e.casella@gmail.com",""],notes:""}
+];
+
+function seedImportedDesignersV318(){
+  const phoneKey=v=>String(v||"").replace(/\D/g,"").slice(-10);
+  const emailKey=v=>String(v||"").trim().toLowerCase();
+  const nameKey=v=>String(v||"").trim().toLowerCase().replace(/\s+/g," ");
+  let changed=false;
+
+  IMPORTED_DESIGNERS_V318.forEach(raw=>{
+    const seed=normalizeDesigner(raw);
+    const seedPhones=(seed.phones||[]).map(phoneKey).filter(Boolean);
+    const seedEmails=(seed.emails||[]).map(emailKey).filter(Boolean);
+
+    const existing=clients.find(c=>{
+      const cPhones=(c.phones||[]).map(phoneKey).filter(Boolean);
+      const cEmails=(c.emails||[]).map(emailKey).filter(Boolean);
+
+      if(seedPhones.some(p=>cPhones.includes(p))) return true;
+      if(seedEmails.some(e=>cEmails.includes(e))) return true;
+
+      return nameKey(c.name)===nameKey(seed.name) &&
+             nameKey(c.contact||"")===nameKey(seed.contact||"");
+    });
+
+    if(!existing){
+      clients.push(seed);
+      changed=true;
+      return;
+    }
+
+    existing.phones=Array.isArray(existing.phones)?existing.phones:["",""];
+    existing.emails=Array.isArray(existing.emails)?existing.emails:["",""];
+
+    if(!existing.contact && seed.contact){existing.contact=seed.contact;changed=true;}
+    if(!existing.phones[0] && seed.phones[0]){existing.phones[0]=seed.phones[0];changed=true;}
+    if(!existing.emails[0] && seed.emails[0]){existing.emails[0]=seed.emails[0];changed=true;}
+    if(!existing.notes && seed.notes){existing.notes=seed.notes;changed=true;}
+  });
+
+  return changed;
+}
+
 function syncStatus(message){const el=$("#syncStatusText"); if(el) el.textContent=message;}
 function persistLocal(){localStorage.setItem(LS_CLIENTS,JSON.stringify(clients));localStorage.setItem(LS_INVOICES,JSON.stringify(invoices));}
 async function persistAll(immediate=false){persistLocal(); if(window.EvanaSync){await window.EvanaSync.savePartial({clients,invoices}, {immediate});}}
-function applyBundle(bundle){if(!bundle) return; clients=(bundle.clients||[]).map(normalizeDesigner); invoices=bundle.invoices||[]; lastLoadedBundleStamp=bundle.updatedAt||""; persistLocal(); render();}
+function applyBundle(bundle){if(!bundle) return; clients=(bundle.clients||[]).map(normalizeDesigner); invoices=bundle.invoices||[]; lastLoadedBundleStamp=bundle.updatedAt||""; const imported=seedImportedDesignersV318(); persistLocal(); render(); if(imported) persistAll(false);}
 async function load(){
   if(window.EvanaSync){
     window.EvanaSync.onStatus(({message})=>syncStatus(message));
     const bundle=await window.EvanaSync.getStartupBundle();
     applyBundle(bundle);
     await window.EvanaSync.init();
+    syncStatus(window.EvanaSync.hasValidConfig() ? "Cloud sync connected." : "Local autosave enabled.");
   } else {
     try{clients=JSON.parse(localStorage.getItem(LS_CLIENTS)||"[]").map(normalizeDesigner)}catch{clients=[]}
     try{invoices=JSON.parse(localStorage.getItem(LS_INVOICES)||"[]")}catch{invoices=[]}
+    seedImportedDesignersV318();
     persistLocal();
     render();
   }

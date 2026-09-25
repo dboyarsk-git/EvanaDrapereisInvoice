@@ -231,3 +231,15 @@ Imported:
 - Lauren Casella — (704) 604-5515 — Lauren.e.casella@gmail.com
 
 When Supabase is connected, these records are also pushed into the shared Evana workspace so they appear on both phone and computer.
+
+
+## V3.18 fixes
+- Imported designers are now hard-seeded directly into the Invoice Builder and Designer Library.
+- This no longer relies only on sync.js, which is why the V3.17 badge could appear while the designer list was still empty.
+- Imported records are still de-duplicated by phone/email.
+- Mary Ludemann is stored under company New Old.
+- Imported designers automatically sync to Supabase after startup when cloud sync is connected.
+- Invoice numbering now starts at 692.
+- Print mode hides the top Evana app header, sync strip, builder panel, password overlay, and preview heading.
+- Only the actual estimate/invoice content is intended to print.
+- Sync status now explicitly displays Cloud sync connected when the Supabase config is present.

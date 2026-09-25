@@ -48,7 +48,7 @@ const state = {
 const LS_CLIENTS = "evana_clients_v1";
 const LS_INVOICES = "evana_invoices_v1";
 const LS_DRAFT = "evana_current_draft_v1";
-const INVOICE_START = 691;
+const INVOICE_START = 692;
 let applyingExternalState = false;
 let lastLoadedBundleStamp = "";
 
@@ -82,6 +82,62 @@ function clientEmail1(c={}){return ((c.emails||[])[0]||c.email1||c.clientEmail1|
 function clientEmail2(c={}){return ((c.emails||[])[1]||c.email2||c.clientEmail2||"");}
 
 
+
+const IMPORTED_DESIGNERS_V318 = [
+  {id:"designer_import_michelle_mcswain",name:"Michelle McSwain",contact:"",address:"",phones:["(704) 691-4314",""],emails:["michellemcswain29@yahoo.com",""],notes:""},
+  {id:"designer_import_clarissa_michael",name:"Clarissa + Michael",contact:"",address:"",phones:["(917) 575-7710",""],emails:["",""],notes:"Email not provided."},
+  {id:"designer_import_new_old_mary_ludemann",name:"New Old",contact:"Mary Ludemann",address:"",phones:["(407) 267-4450",""],emails:["mary@newold.com",""],notes:""},
+  {id:"designer_import_beth_lomas",name:"Beth Lomas",contact:"",address:"",phones:["(704) 771-6370",""],emails:["Lomasinteriors@gmail.com",""],notes:""},
+  {id:"designer_import_philip_mchugh",name:"Philip McHugh",contact:"",address:"",phones:["(704) 421-4644",""],emails:["",""],notes:"Email: TBD"},
+  {id:"designer_import_lauren_casella",name:"Lauren Casella",contact:"",address:"",phones:["(704) 604-5515",""],emails:["Lauren.e.casella@gmail.com",""],notes:""}
+];
+
+function seedImportedDesignersV318(){
+  const phoneKey=v=>String(v||"").replace(/\D/g,"").slice(-10);
+  const emailKey=v=>String(v||"").trim().toLowerCase();
+  const nameKey=v=>String(v||"").trim().toLowerCase().replace(/\s+/g," ");
+
+  let changed=false;
+
+  IMPORTED_DESIGNERS_V318.forEach(raw=>{
+    const seed=normalizeDesigner(raw);
+    const seedPhones=(seed.phones||[]).map(phoneKey).filter(Boolean);
+    const seedEmails=(seed.emails||[]).map(emailKey).filter(Boolean);
+
+    let existing=state.clients.find(c=>{
+      const cPhones=(c.phones||[]).map(phoneKey).filter(Boolean);
+      const cEmails=(c.emails||[]).map(emailKey).filter(Boolean);
+
+      if(seedPhones.some(p=>cPhones.includes(p))) return true;
+      if(seedEmails.some(e=>cEmails.includes(e))) return true;
+
+      return nameKey(c.name)===nameKey(seed.name) &&
+             nameKey(c.contact||"")===nameKey(seed.contact||"");
+    });
+
+    if(!existing){
+      state.clients.push(seed);
+      changed=true;
+      return;
+    }
+
+    existing.phones=Array.isArray(existing.phones)?existing.phones:["",""];
+    existing.emails=Array.isArray(existing.emails)?existing.emails:["",""];
+
+    if(!existing.name && seed.name){existing.name=seed.name;changed=true;}
+    if(!existing.contact && seed.contact){existing.contact=seed.contact;changed=true;}
+    if(!existing.address && seed.address){existing.address=seed.address;changed=true;}
+    if(!existing.phones[0] && seed.phones[0]){existing.phones[0]=seed.phones[0];changed=true;}
+    if(!existing.phones[1] && seed.phones[1]){existing.phones[1]=seed.phones[1];changed=true;}
+    if(!existing.emails[0] && seed.emails[0]){existing.emails[0]=seed.emails[0];changed=true;}
+    if(!existing.emails[1] && seed.emails[1]){existing.emails[1]=seed.emails[1];changed=true;}
+    if(!existing.notes && seed.notes){existing.notes=seed.notes;changed=true;}
+  });
+
+  if(changed) persistClients();
+  return changed;
+}
+
 function updateDocTypeUI(){
   $$(".seg").forEach(b=>b.classList.toggle("active", b.dataset.docType===state.docType));
   const title=$("#builderTitle");
@@ -108,6 +164,7 @@ function applyBundleToState(bundle){
   lastLoadedBundleStamp = bundle.updatedAt || "";
   state.clients = (bundle.clients || []).map(normalizeDesigner);
   state.invoices = bundle.invoices || [];
+  seedImportedDesignersV318();
   populateClients();
   const draft = bundle.currentDraft;
   if(draft){
@@ -160,6 +217,7 @@ async function initSyncUI(){
   if(!window.EvanaSync) return;
   window.EvanaSync.onStatus(({message})=>syncStatus(message));
   await window.EvanaSync.init();
+  syncStatus(window.EvanaSync.hasValidConfig() ? "Cloud sync connected." : "Local autosave enabled.");
   const syncBtn = $("#syncNowBtn");
   const loadBtn = $("#loadCloudBtn");
   if(syncBtn) syncBtn.addEventListener("click", async()=>{ await autosaveAll(true); alert("Saved and synced."); });
@@ -192,6 +250,7 @@ async function seed(){
       try { state.clients = JSON.parse(localStorage.getItem(LS_CLIENTS) || "[]"); } catch { state.clients=[]; }
       try { state.invoices = JSON.parse(localStorage.getItem(LS_INVOICES) || "[]"); } catch { state.invoices=[]; }
       state.clients = state.clients.map(normalizeDesigner);
+      seedImportedDesignersV318();
       persistClients();
       populateClients();
       $("#docDate").value = localISODate();
@@ -201,6 +260,7 @@ async function seed(){
       renderPreview();
     }
     await initSyncUI();
+    await autosaveAll(false);
   })();
 }
 function persistClients(){ localStorage.setItem(LS_CLIENTS, JSON.stringify(state.clients)); }
