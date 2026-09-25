@@ -333,3 +333,124 @@ input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
   background:#e9f0e9;
   box-shadow:inset 0 0 0 1px rgba(35,61,50,.06);
 }
+
+
+/* ---------- V3.11 drapery finish charges ---------- */
+.finishing-charge-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.finishing-charge-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:52px;
+  padding:10px 12px;
+  border:1px solid #d9cfbf;
+  border-radius:10px;
+  background:#fffdf9;
+}
+.finishing-charge-card.selected{
+  border-color:#8ea08f;
+  background:#eef3ed;
+}
+.finishing-charge-name{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--forest);
+}
+.finishing-charge-name input{
+  width:16px;
+  height:16px;
+  accent-color:var(--forest);
+}
+.charge-input{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  max-width:120px;
+}
+.charge-input span{
+  font-weight:800;
+  color:var(--gold);
+}
+.charge-input input{
+  width:95px;
+  margin:0;
+}
+
+/* Force desktop-style invoice header during printing, even from a phone.
+   iOS print can keep the phone viewport active, so the normal mobile
+   media query would otherwise stack the two information columns. */
+@media print{
+  html,body{
+    width:8.5in !important;
+    min-width:8.5in !important;
+  }
+  .invoice-page{
+    width:7.6in !important;
+    min-width:7.6in !important;
+    max-width:7.6in !important;
+    margin:0 auto !important;
+    padding:.32in .38in !important;
+    box-sizing:border-box !important;
+  }
+  .invoice-top{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+    gap:.45in !important;
+    align-items:start !important;
+  }
+  .invoice-brand,
+  .invoice-doc{
+    display:block !important;
+    width:auto !important;
+    min-width:0 !important;
+  }
+  .invoice-doc{
+    text-align:left !important;
+  }
+  .invoice-doc h1{
+    text-align:right !important;
+  }
+  .invoice-doc .right-block{
+    margin-left:auto !important;
+    width:max-content !important;
+    max-width:100% !important;
+  }
+  .invoice-brand h1,
+  .invoice-doc h1{
+    font-size:26pt !important;
+  }
+  .invoice-brand,
+  .invoice-doc{
+    font-size:11pt !important;
+    line-height:1.22 !important;
+  }
+  .invoice-bottom{
+    display:grid !important;
+    grid-template-columns:1fr auto !important;
+    gap:.25in !important;
+  }
+  .invoice-table{
+    width:100% !important;
+    table-layout:fixed !important;
+  }
+  .invoice-table th:nth-child(1){width:11% !important;}
+  .invoice-table th:nth-child(2){width:66% !important;}
+  .invoice-table th:nth-child(3){width:12% !important;}
+  .invoice-table th:nth-child(4){width:11% !important;}
+  *{
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
+}
+
+@media(max-width:620px){
+  .finishing-charge-grid{grid-template-columns:1fr;}
+}

@@ -44,10 +44,10 @@ Data is currently stored in browser localStorage for this mock version.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
 
-V3.10: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
+V3.11: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
 
 
-## V3.10 update
+## V3.11 update
 - FL can now be toggled on/off for each drapery line item.
 - When FL is off, no finished-length surcharge is applied and FL is omitted from the invoice description.
 - Added optional Return measurement toggle. When enabled it prints as R-#".
@@ -55,7 +55,7 @@ V3.10: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Return and Overlap are informational measurements only and do not automatically change pricing.
 
 
-## V3.10 update
+## V3.11 update
 - Drapery items can now contain multiple measurement sets under the same room/style.
 - Use “+ Add Another Measurement” to add a second, third, etc. full measurement row.
 - Each measurement row has its own:
@@ -73,7 +73,7 @@ V3.10: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Additional measurement rows can be removed without deleting the whole drapery item.
 
 
-## V3.10 fixes
+## V3.11 fixes
 - “+ Add Another Measurement” now duplicates the entire previous measurement row.
 - The copied row includes:
   - Quantity
@@ -87,7 +87,7 @@ V3.10: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Removed the accidental duplicated “Return” label.
 
 
-## V3.10 updates
+## V3.11 updates
 - Added `L/I` to the Drapery Lining dropdown.
 - L/I remains uppercase in the printed invoice description.
 - FL is now always available for drapery measurements.
@@ -97,3 +97,30 @@ V3.10: repaired preview, embedded logo, Designers page, designer deletion, phone
 - The new measurement is now a deep copy of the previous row, including all currently typed values.
 - Editing the copied row does not change or clear the previous measurement.
 - Toggle changes also sync all other measurement values first, preventing typed entries from disappearing.
+
+
+## V3.11 updates
+- Drapery Style dropdown now uses:
+  - Pinch Pleat
+  - Euro Pleat
+  - Euro Pinch Pleat
+  - Flat Top
+  - Flat Top w/ Tape
+  - Goblet
+  - Ripple Fold
+  - Tape
+  - Custom
+- Drapery Lining dropdown now uses:
+  - Unlined
+  - Lined
+  - L/I
+  - Combo Lining
+  - Blackout
+  - Blackout / Interlined
+- Added a dedicated Additional Charges section for Fanfold and Pin.
+- Fanfold and Pin each reveal an editable dollar charge when checked.
+- Those charges are included in the drapery final price.
+- Fanfold / Pin print as separate description lines.
+- Mobile PDF printing now forces the top company information and estimate/invoice information into two columns, matching the desktop print layout.
+- Mobile print also forces the invoice table and bottom payment/totals area to keep their desktop proportions.
+- Drapery invoice Quantity now totals all measurement-row quantities in that drapery item.

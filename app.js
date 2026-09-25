@@ -3,16 +3,14 @@ const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
 
 const PRICE = {
   drapery: {
-    "Euro Pinch Pleat": { range:[120,120], unit:"per width" },
-    "Euro / Parisian": { range:[120,120], unit:"per width" },
     "Pinch Pleat": { range:[65,85], unit:"per width" },
-    "Sheer Rod Pocket": { range:[65,65], unit:"per width" },
-    "Sheer Pinch Pleat": { range:[90,90], unit:"per width" },
-    "Rod Pocket": { range:[55,65], unit:"per width" },
+    "Euro Pleat": { range:[120,120], unit:"per width" },
+    "Euro Pinch Pleat": { range:[120,120], unit:"per width" },
     "Flat Top": { range:[75,85], unit:"per width" },
-    "Goblet Pleat": { range:[85,95], unit:"per width" },
-    "Grommet": { range:[85,95], unit:"per width" },
-    "Ripple Tape": { range:[75,85], unit:"per width" },
+    "Flat Top w/ Tape": { range:[75,85], unit:"per width" },
+    "Goblet": { range:[85,95], unit:"per width" },
+    "Ripple Fold": { range:[75,85], unit:"per width" },
+    "Tape": { range:[75,85], unit:"per width" },
     "Custom": { range:[0,0], unit:"manual" }
   },
   roman: {
@@ -32,8 +30,8 @@ const PRICE = {
   }
 };
 
-const DRAPERY_STYLES = ["Euro Pinch Pleat","Euro / Parisian","Pinch Pleat","Sheer Rod Pocket","Sheer Pinch Pleat","Rod Pocket","Flat Top","Goblet Pleat","Grommet","Ripple Tape","Custom"];
-const LININGS = ["No Lining","Lined","L/I","Interlined","Blackout","Blackout + Interlined","Bump","Custom"];
+const DRAPERY_STYLES = ["Pinch Pleat","Euro Pleat","Euro Pinch Pleat","Flat Top","Flat Top w/ Tape","Goblet","Ripple Fold","Tape","Custom"];
+const LININGS = ["Unlined","Lined","L/I","Combo Lining","Blackout","Blackout / Interlined"];
 const DRAPERY_EXTRAS = ["Pattern Matching","Fabric Band","Trim","Hand Side Hem","Mounted on Board","Attached Valance","Grommets","Hardware","Alteration","Bump","Custom Extra"];
 const ROMAN_EXTRAS = ["Motorized","Rowley Lifting System","Cordless Lifting System","Continuous Cord System","Stabilizing Fabric","Tailored Valance","Pattern Match","Inside Mount","Outside Mount","Hardware","Custom Extra"];
 const PILLOW_EXTRAS = ["Zipper","Turkish Corners","Box Construction","Pattern Matching","Cut Down Pillow Form","Custom Pillow Form","Down Insert","Trim","Custom Extra"];
@@ -259,6 +257,10 @@ function draperyForm(i){
   i.customStyle||="";
   i.itemNote||="";
   i.showPricing ??= true;
+  i.fanfold ??= false;
+  i.fanfoldCharge ??= 0;
+  i.pin ??= false;
+  i.pinCharge ??= 0;
   ensureDraperyMeasurements(i);
 
   const calc = draperyCalc(i);
@@ -304,6 +306,31 @@ function draperyForm(i){
     </div>
     <div class="surcharge-live ${i.showPricing===false?"is-hidden":""}">
       ${surchargeBadges}
+    </div>
+  </div>
+
+  <div class="subsection finishing-charge-section">
+    <div class="subsection-head">
+      <h4>Additional Charges</h4>
+      <span class="muted">Check the service, then enter the charge</span>
+    </div>
+
+    <div class="finishing-charge-grid">
+      <label class="finishing-charge-card ${i.fanfold?"selected":""}">
+        <div class="finishing-charge-name">
+          <input type="checkbox" class="f-fanfold" ${i.fanfold?"checked":""}>
+          <span>Fanfold</span>
+        </div>
+        ${i.fanfold?`<div class="charge-input"><span>$</span><input class="f-fanfold-charge" type="number" min="0" step="0.01" value="${i.fanfoldCharge}"></div>`:""}
+      </label>
+
+      <label class="finishing-charge-card ${i.pin?"selected":""}">
+        <div class="finishing-charge-name">
+          <input type="checkbox" class="f-pin" ${i.pin?"checked":""}>
+          <span>Pin</span>
+        </div>
+        ${i.pin?`<div class="charge-input"><span>$</span><input class="f-pin-charge" type="number" min="0" step="0.01" value="${i.pinCharge}"></div>`:""}
+      </label>
     </div>
   </div>
 
@@ -568,6 +595,10 @@ function bindItemForm(node,item){
     bind(".f-unit-price","unitPrice",num);
     bind(".f-override","overridePrice",v=>v===""?"":num(v));
     bind(".f-show-pricing","showPricing",Boolean,true);
+    bind(".f-fanfold","fanfold",Boolean,true);
+    bind(".f-fanfold-charge","fanfoldCharge",num);
+    bind(".f-pin","pin",Boolean,true);
+    bind(".f-pin-charge","pinCharge",num);
   }else{
     bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num); bind(".f-fl","fl",num); bind(".f-fw","fw",num); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
   }
@@ -640,12 +671,22 @@ function draperyCalc(i){
   if((i.extras||[]).includes("Pattern Matching")) reasons.push("Pattern matching: +20%");
   if(i.lining==="Bump" || (i.extras||[]).includes("Bump")) reasons.push("Bump: +20%");
 
+  const finishingCharges =
+    (i.fanfold ? num(i.fanfoldCharge) : 0) +
+    (i.pin ? num(i.pinCharge) : 0);
+
+  calculated += finishingCharges;
+
+  if(i.fanfold) reasons.push(`Fanfold: +${money(num(i.fanfoldCharge))}`);
+  if(i.pin) reasons.push(`Pin: +${money(num(i.pinCharge))}`);
+
   const final=i.overridePrice!=="" ? num(i.overridePrice) : calculated;
   return {
     base,
     globalPct,
     reasons,
     calculated,
+    finishingCharges,
     final,
     totalQty,
     lines,
@@ -716,7 +757,9 @@ function itemDescription(i){
   if(i.type==="drapery"){
     const style=i.style==="Custom"?(i.customStyle||"Custom Drapery"):i.style;
     const c=draperyCalc(i);
-    const liningText=i.lining==="L/I" ? "L/I" : (i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined");
+    const liningText = i.lining==="L/I"
+      ? "L/I"
+      : (i.lining==="Unlined" ? "unlined" : String(i.lining||"").toLowerCase());
     const bits=[`${style} (${liningText})`];
 
     c.measurements.forEach(m=>{
@@ -732,7 +775,12 @@ function itemDescription(i){
       bits.push(`${qty} ${piece}${qty>1?"s":""}, ${widths} width${widths===1?"":"s"}${measurements.length?`, ${measurements.join(", ")}`:""}`);
     });
 
-    c.reasons.forEach(r=>bits.push(r));
+    c.reasons
+      .filter(r=>!r.startsWith("Fanfold:") && !r.startsWith("Pin:"))
+      .forEach(r=>bits.push(r));
+
+    if(i.fanfold) bits.push("Fanfold");
+    if(i.pin) bits.push("Pin");
 
     (i.extras||[]).forEach(x=>{
       if(x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
@@ -816,7 +864,8 @@ function renderPreview(){
       const calc=calcItem(i);
       if(i.type==="supply") supply+=calc.final; else labor+=calc.final;
       const desc=`${first?`<div class="room-title">${esc(room.name||"Untitled Room")}</div>`:""}${esc(itemDescription(i)).replace(/\n/g,"<br>")}${first&&room.notes?`<br><span>${esc(room.notes)}</span>`:""}`;
-      rows.push(`<tr><td class="invoice-number-cell">${num(i.quantity)||1}</td><td class="invoice-desc">${desc}</td><td class="invoice-money-cell">${money(itemUnitPrice(i))}</td><td class="invoice-money-cell">${money(calc.final)}</td></tr>`); first=false;
+      const displayQty = i.type==="drapery" ? (calc.totalQty||1) : (num(i.quantity)||1);
+      rows.push(`<tr><td class="invoice-number-cell">${displayQty}</td><td class="invoice-desc">${desc}</td><td class="invoice-money-cell">${money(itemUnitPrice(i))}</td><td class="invoice-money-cell">${money(calc.final)}</td></tr>`); first=false;
     });
     if(!room.items.length && room.notes){ rows.push(`<tr><td></td><td class="invoice-desc"><div class="room-title">${esc(room.name||"Untitled Room")}</div>${esc(room.notes)}</td><td></td><td></td></tr>`); }
   });
