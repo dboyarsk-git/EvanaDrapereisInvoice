@@ -68,6 +68,7 @@ function seed(){
   populateClients();
   $("#docDate").value = new Date().toISOString().slice(0,10);
   $("#invoiceNumber").value = String(nextInvoiceNumber());
+  const title=$("#builderTitle"); if(title) title.textContent=`Create ${state.docType}`;
   addRoom("Living Room / Dining Room");
   renderPreview();
 }
@@ -122,7 +123,7 @@ function renderItem(room,item,index){
   const node=$("#itemTemplate").content.firstElementChild.cloneNode(true);
   node.dataset.itemId=item.id;
   $(".item-number",node).textContent=index+1;
-  $(".item-title",node).textContent = ({drapery:"Drapery",roman:"Roman Shade",pillow:"Pillow",custom:"Custom Item"})[item.type];
+  $(".item-title",node).textContent = ({drapery:"Drapery",roman:"Roman Shade",pillow:"Pillow",supply:"Supply",custom:"Custom Item"})[item.type];
   $$(".type-tab",node).forEach(btn=>{
     btn.classList.toggle("active",btn.dataset.type===item.type);
     btn.addEventListener("click",()=>{item.type=btn.dataset.type; Object.keys(item).filter(k=>!["id","type","quantity","overridePrice"].includes(k)).forEach(k=>delete item[k]); renderRooms(); renderPreview();});
@@ -132,6 +133,7 @@ function renderItem(room,item,index){
   if(item.type==="drapery") form.innerHTML=draperyForm(item);
   if(item.type==="roman") form.innerHTML=romanForm(item);
   if(item.type==="pillow") form.innerHTML=pillowForm(item);
+  if(item.type==="supply") form.innerHTML=supplyForm(item);
   if(item.type==="custom") form.innerHTML=customForm(item);
   bindItemForm(node,item);
   renderPriceSummary(node,item);
@@ -272,6 +274,32 @@ function pillowForm(i){
   `;
 }
 
+
+function supplyForm(i){
+  i.description ||= "";
+  i.unitPrice ??= 0;
+  i.quantity ??= 1;
+  i.overridePrice ||= "";
+  i.showPricing ??= true;
+  return `
+  <div class="workflow-label">SUPPLY ITEM</div>
+  <label>Description
+    <textarea class="f-description" rows="3" placeholder="Lining, interlining, blackout, hardware, motor, trim, etc.">${esc(i.description)}</textarea>
+  </label>
+  <div class="grid grid-3">
+    <label>Quantity
+      <input class="f-quantity" type="number" min="0" step="0.25" value="${i.quantity}">
+    </label>
+    <label>Price Per Unit
+      <input class="f-unit-price" type="number" min="0" step="0.01" value="${i.unitPrice}">
+    </label>
+    <label>Override Final Price
+      <input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional">
+    </label>
+  </div>
+  `;
+}
+
 function customForm(i){
   i.description ||= ""; i.unitPrice ??=0; i.quantity ??=1; i.overridePrice||=""; i.showPricing ??=true;
   return `
@@ -284,9 +312,19 @@ function customForm(i){
 }
 function rangeText(r){ if(!r) return "Manual"; return r[0]===r[1]?money(r[0]):`${money(r[0])}–${money(r[1])}`; }
 
+function updateDraperySurcharges(node,item){
+  if(item.type!=="drapery") return;
+  const wrap=$(".surcharge-live",node);
+  if(!wrap) return;
+  const c=draperyCalc(item);
+  wrap.innerHTML=c.reasons.length
+    ? c.reasons.map(r=>`<span class="surcharge-badge">${esc(r)}</span>`).join("")
+    : `<span class="no-surcharge">No automatic surcharge currently applies.</span>`;
+}
+
 function bindItemForm(node,item){
-  const bind=(sel,key,convert=v=>v,rerender=false)=>{ const el=$(sel,node); if(!el) return; const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input"; el.addEventListener(evt,e=>{ item[key]=convert(el.type==="checkbox"?el.checked:el.value); if(rerender) renderRooms(); else { renderPriceSummary(node,item); renderPreview(); } }); };
-  bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num,true); bind(".f-fl","fl",num,true); bind(".f-fw","fw",num,true); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
+  const bind=(sel,key,convert=v=>v,rerender=false)=>{ const el=$(sel,node); if(!el) return; const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input"; el.addEventListener(evt,e=>{ item[key]=convert(el.type==="checkbox"?el.checked:el.value); if(rerender) renderRooms(); else { updateDraperySurcharges(node,item); renderPriceSummary(node,item); renderPreview(); renderDiscountSummary(); } }); };
+  bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num); bind(".f-fl","fl",num); bind(".f-fw","fw",num); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
   $$(".extra-check",node).forEach(ch=>ch.addEventListener("change",()=>{ item.extras=$$(".extra-check:checked",node).map(x=>x.value); renderRooms(); renderPreview(); }));
 }
 
@@ -343,8 +381,9 @@ function pillowCalc(i){
   const final=i.overridePrice!==""?num(i.overridePrice):calculated;
   return {baseEach,extraEach,reasons,calculated,final};
 }
+function supplyCalc(i){ const calculated=num(i.unitPrice)*Math.max(0,num(i.quantity)); return {calculated,final:i.overridePrice!==""?num(i.overridePrice):calculated}; }
 function customCalc(i){ const calculated=num(i.unitPrice)*Math.max(1,num(i.quantity)); return {calculated,final:i.overridePrice!==""?num(i.overridePrice):calculated}; }
-function calcItem(i){ return i.type==="drapery"?draperyCalc(i):i.type==="roman"?romanCalc(i):i.type==="pillow"?pillowCalc(i):customCalc(i); }
+function calcItem(i){ return i.type==="drapery"?draperyCalc(i):i.type==="roman"?romanCalc(i):i.type==="pillow"?pillowCalc(i):i.type==="supply"?supplyCalc(i):customCalc(i); }
 
 function renderPriceSummary(node,item){
   const box=$(".price-summary",node); if(!box) return; const c=calcItem(item);
@@ -352,6 +391,7 @@ function renderPriceSummary(node,item){
   if(item.type==="drapery") details=`<div>Entered widths: ${c.entered} → Billable widths: <strong>${c.billable}</strong></div><div>Base: ${money(c.base)}</div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Total surcharge: +${c.pct}%</div>`;
   if(item.type==="roman") details=`<div>Sq. ft.: ${c.sqftRaw.toFixed(4)} → <strong>${c.sqft.toFixed(2)}</strong></div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Extras per shade: ${money(c.extrasEach)}</div>`;
   if(item.type==="pillow") details=`<div>Base each: ${money(c.baseEach)}</div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Extras each: ${money(c.extraEach)}</div>`;
+  if(item.type==="supply") details=`<div>Supply line item</div>`;
   if(item.type==="custom") details=`<div>Manual line item</div>`;
   box.innerHTML=`<div class="total-line"><span>Calculated</span><strong>${money(c.calculated)}</strong></div>${item.overridePrice!==""?`<div class="total-line"><span>Override in use</span><strong>${money(c.final)}</strong></div>`:""}<div class="pricing-detail ${item.showPricing===false?"hidden":""}">${details}</div>`;
 }
@@ -387,6 +427,7 @@ function itemDescription(i){
     if(i.itemNote) bits.push(i.itemNote);
     return bits.join("\n");
   }
+  if(i.type==="supply") return i.description||"Supply";
   return i.description||"Custom item";
 }
 function itemUnitPrice(i){
@@ -412,12 +453,20 @@ function discountCalc(subtotal){
   const label=($("#discountLabel")?.value||"Discount").trim()||"Discount";
   return {type,raw,amount,display,label};
 }
+function invoiceBuckets(){
+  let labor=0, supply=0;
+  state.rooms.forEach(r=>r.items.forEach(i=>{
+    const val=calcItem(i).final;
+    if(i.type==="supply") supply+=val;
+    else labor+=val;
+  }));
+  return {labor,supply};
+}
+
 function renderDiscountSummary(){
   const box=$("#discountSummary");
   if(!box) return;
-  let labor=0;
-  state.rooms.forEach(r=>r.items.forEach(i=>labor+=calcItem(i).final));
-  const supply=num($("#supplyTotal").value);
+  const {labor,supply}=invoiceBuckets();
   const install=num($("#installationTotal").value);
   const subtotal=supply+labor+install;
   const d=discountCalc(subtotal);
@@ -430,18 +479,19 @@ function renderDiscountSummary(){
 
 function renderPreview(){
   const c=selectedClient()||{}; const docType=state.docType; const date=$("#docDate").value; const invoiceNo=$("#invoiceNumber").value; const addr=$("#projectAddress").value;
-  let labor=0;
+  let labor=0, supply=0;
   const rows=[];
   state.rooms.forEach(room=>{
     let first=true;
     room.items.forEach(i=>{
-      const calc=calcItem(i); labor+=calc.final;
+      const calc=calcItem(i);
+      if(i.type==="supply") supply+=calc.final; else labor+=calc.final;
       const desc=`${first?`<div class="room-title">${esc(room.name||"Untitled Room")}</div>`:""}${esc(itemDescription(i)).replace(/\n/g,"<br>")}${first&&room.notes?`<br><span>${esc(room.notes)}</span>`:""}`;
       rows.push(`<tr><td class="invoice-number-cell">${num(i.quantity)||1}</td><td class="invoice-desc">${desc}</td><td class="invoice-money-cell">${money(itemUnitPrice(i))}</td><td class="invoice-money-cell">${money(calc.final)}</td></tr>`); first=false;
     });
     if(!room.items.length && room.notes){ rows.push(`<tr><td></td><td class="invoice-desc"><div class="room-title">${esc(room.name||"Untitled Room")}</div>${esc(room.notes)}</td><td></td><td></td></tr>`); }
   });
-  const supply=num($("#supplyTotal").value); const install=num($("#installationTotal").value); const subtotal=supply+labor+install; const discount=discountCalc(subtotal); const total=subtotal-discount.amount;
+  const install=num($("#installationTotal").value); const subtotal=supply+labor+install; const discount=discountCalc(subtotal); const total=subtotal-discount.amount;
   $("#invoicePreview").innerHTML=`<div class="invoice-wrap"><div class="watermark"><span>${esc(docType.toUpperCase())}</span></div>
     <div class="invoice-top">
       <div class="invoice-brand"><h1>Evana Draperies</h1><div>8200 Hornwood Ct</div><div>Charlotte NC 28215</div><br><div>Phone: 704-236-6032</div><div>Fax: 704-568-8078</div><div>Email: Evanadraperies1@gmail.com</div></div>
@@ -454,8 +504,9 @@ function renderPreview(){
 function formatDate(v){ if(!v) return ""; const d=new Date(v+"T00:00:00"); return d.toLocaleDateString("en-US"); }
 
 function collectInvoice(){
-  const c=selectedClient()||{}; let labor=0; state.rooms.forEach(r=>r.items.forEach(i=>labor+=calcItem(i).final));
-  const supply=num($("#supplyTotal").value), install=num($("#installationTotal").value);
+  const c=selectedClient()||{};
+  const {labor,supply}=invoiceBuckets();
+  const install=num($("#installationTotal").value);
   const subtotal=supply+labor+install;
   const discount=discountCalc(subtotal);
   return {id:uid("inv"),clientId:c.id,clientName:c.name,invoiceNumber:$("#invoiceNumber").value,description:state.rooms.map(r=>r.name).filter(Boolean).join(" / ")||"Project",status:$("#invoiceStatus").value,date:$("#docDate").value,total:subtotal-discount.amount,subtotal,supply,labor,installation:install,discount:{type:discount.type,value:discount.raw,amount:discount.amount,label:discount.label},docType:state.docType,projectAddress:$("#projectAddress").value,rooms:JSON.parse(JSON.stringify(state.rooms))};
@@ -474,10 +525,18 @@ function renderDashboard(){
 }
 
 // top-level bindings
-$$(".seg").forEach(btn=>btn.addEventListener("click",()=>{state.docType=btn.dataset.docType; $$(".seg").forEach(b=>b.classList.toggle("active",b===btn)); renderPreview();}));
+$$(".seg").forEach(btn=>btn.addEventListener("click",()=>{
+  state.docType=btn.dataset.docType;
+  $$(".seg").forEach(b=>b.classList.toggle("active",b===btn));
+  const title=$("#builderTitle");
+  if(title) title.textContent=`Create ${state.docType}`;
+  renderPreview();
+  const wm=$("#invoicePreview .watermark span");
+  if(wm) wm.textContent=state.docType.toUpperCase();
+}));
 $("#addRoomBtn").addEventListener("click",()=>addRoom(""));
 $("#clientSelect").addEventListener("change",()=>{const c=selectedClient(); if(c) $("#projectAddress").value=c.address||""; renderPreview();});
-["#projectAddress","#docDate","#invoiceStatus","#supplyTotal","#installationTotal","#discountType","#discountValue","#discountLabel"].forEach(sel=>$(sel).addEventListener("input",()=>{renderPreview();renderDiscountSummary();}));
+["#projectAddress","#docDate","#invoiceStatus","#installationTotal","#discountType","#discountValue","#discountLabel"].forEach(sel=>$(sel).addEventListener("input",()=>{renderPreview();renderDiscountSummary();}));
 $("#refreshPreviewBtn").addEventListener("click",renderPreview);
 $("#printBtn").addEventListener("click",()=>{renderPreview(); window.print();});
 $("#newClientBtn").addEventListener("click",()=>$("#clientDialog").showModal());
@@ -499,9 +558,10 @@ $("#saveInvoiceBtn").addEventListener("click",()=>{
   renderDashboard();
   alert(`Saved ${inv.docType} #${inv.invoiceNumber} to ${inv.clientName}.`);
   $("#invoiceNumber").value = String(nextInvoiceNumber());
+  const title=$("#builderTitle"); if(title) title.textContent=`Create ${state.docType}`;
   renderPreview();
 });
-$("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,supply:$("#supplyTotal").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
+$("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
 
 seed();
 renderDiscountSummary();

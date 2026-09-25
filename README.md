@@ -1,8 +1,8 @@
-# Evana Draperies Invoice Builder — V3.1
+# Evana Draperies Invoice Builder — V3.2
 
 GitHub Pages-ready static mockup.
 
-## V3.1 updates
+## V3.2 updates
 - Invoice numbering starts at 691 and auto-increments from saved invoices.
 - Date defaults automatically to today's date.
 - Euro Pinch Pleat is the default drapery style.
@@ -25,10 +25,21 @@ Then open:
 Data is currently stored in browser localStorage for this mock version.
 
 
-## V3.1 update
+## V3.2 update
 - Added editable discount controls at the end of the builder.
 - Discount can be entered as a percentage or flat dollar amount.
 - Custom discount label can be changed (for example: Designer Discount or Courtesy Discount).
 - Invoice preview shows the discount as a separate negative line.
 - Subtotal and final total update automatically.
 - Saved invoices store the discount information and completed cash flow uses the final net total.
+
+
+## V3.2 fixes
+- Supply is now a normal room item with Quantity, Description, Price Per Unit, and Final Price.
+- Supply items automatically total into the Supply line at the bottom of the invoice.
+- Removed the old Supply Total Override field.
+- Installation remains a manual invoice-level amount.
+- Fixed numeric entry for panel quantity, widths, FL, and FW by preventing the form from rebuilding while you type.
+- Automatic drapery surcharge badges still update live while dimensions are entered.
+- Estimate / Invoice switch now explicitly updates the watermark and builder heading.
+- Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
