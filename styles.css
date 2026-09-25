@@ -569,3 +569,5 @@ body:not(.auth-locked) .auth-gate{display:none;}
     padding:0 !important;
   }
 }
+
+.seed-fallback-card .client-company{font-size:20px;font-weight:800;color:var(--forest-deep);margin-bottom:6px}.seed-fallback-card .client-contact{color:var(--muted);font-size:14px}

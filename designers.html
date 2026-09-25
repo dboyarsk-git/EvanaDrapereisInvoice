@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Evana Draperies — Designers</title>
-  <link rel="stylesheet" href="styles.css?v=3.18">
+  <link rel="stylesheet" href="styles.css?v=3.19">
 </head>
 <body class="clients-page-body auth-locked">
   <section class="auth-gate" aria-label="Evana login">
@@ -61,7 +61,14 @@
     </div>
     <input id="clientSearch" class="client-search" placeholder="Search designers...">
   </section>
-  <div id="clientCards" class="client-card-grid"></div>
+  <div id="clientCards" class="client-card-grid">
+  <article class="client-detail-card seed-fallback-card"><div class="client-company">Michelle McSwain</div><div class="client-contact">(704) 691-4314 · michellemcswain29@yahoo.com</div></article>
+  <article class="client-detail-card seed-fallback-card"><div class="client-company">Clarissa + Michael</div><div class="client-contact">(917) 575-7710</div></article>
+  <article class="client-detail-card seed-fallback-card"><div class="client-company">New Old</div><div class="client-contact">Mary Ludemann · (407) 267-4450 · mary@newold.com</div></article>
+  <article class="client-detail-card seed-fallback-card"><div class="client-company">Beth Lomas</div><div class="client-contact">(704) 771-6370 · Lomasinteriors@gmail.com</div></article>
+  <article class="client-detail-card seed-fallback-card"><div class="client-company">Philip McHugh</div><div class="client-contact">(704) 421-4644 · Email TBD</div></article>
+  <article class="client-detail-card seed-fallback-card"><div class="client-company">Lauren Casella</div><div class="client-contact">(704) 604-5515 · Lauren.e.casella@gmail.com</div></article>
+</div>
 </main>
 
 <dialog id="clientPageDialog" class="dialog">
@@ -92,10 +99,10 @@
   </form>
 </dialog>
 
-<script src="auth.js?v=3.18"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=3.18"></script>
-<script src="sync.js?v=3.18"></script>
-<script src="designers.js?v=3.18"></script>
+<script src="auth.js?v=3.19"></script>
+<script src="seed-data.js?v=3.19"></script>
+  <script src="supabase-config.js?v=3.19"></script>
+<script src="sync.js?v=3.19"></script>
+<script src="designers.js?v=3.19"></script>
 </body>
 </html>

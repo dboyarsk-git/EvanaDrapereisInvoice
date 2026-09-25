@@ -171,7 +171,8 @@ function applyBundleToState(bundle){
     state.docType = draft.docType || "Estimate";
     updateDocTypeUI();
     $("#docDate").value = draft.date || localISODate();
-    $("#invoiceNumber").value = String(draft.invoiceNumber || nextInvoiceNumber());
+    const draftNo = Number(draft.invoiceNumber)||0;
+    $("#invoiceNumber").value = String(Math.max(INVOICE_START, draftNo, nextInvoiceNumber()));
     $("#invoiceStatus").value = draft.status || "Open";
     $("#projectAddress").value = draft.projectAddress || "";
     $("#installationTotal").value = draft.install || "";

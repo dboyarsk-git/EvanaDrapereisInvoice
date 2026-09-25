@@ -243,3 +243,11 @@ When Supabase is connected, these records are also pushed into the shared Evana 
 - Print mode hides the top Evana app header, sync strip, builder panel, password overlay, and preview heading.
 - Only the actual estimate/invoice content is intended to print.
 - Sync status now explicitly displays Cloud sync connected when the Supabase config is present.
+
+
+## V3.19 reliability fix
+- Removed the external Supabase JavaScript SDK dependency. Cloud sync now uses Supabase REST directly with the publishable key.
+- Added seed-data.js that writes the six imported designers into local storage before the app starts.
+- Added visible fallback designer cards directly in designers.html, so the contacts show even if JavaScript sync fails.
+- Current draft invoice number is forced to at least 692.
+- Cloud sync should now work without cdn.jsdelivr.net loading.
