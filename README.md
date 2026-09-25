@@ -44,10 +44,10 @@ Data is currently stored in browser localStorage for this mock version.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
 
-V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
+V3.16: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
 
 
-## V3.14 update
+## V3.16 update
 - FL can now be toggled on/off for each drapery line item.
 - When FL is off, no finished-length surcharge is applied and FL is omitted from the invoice description.
 - Added optional Return measurement toggle. When enabled it prints as R-#".
@@ -55,7 +55,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Return and Overlap are informational measurements only and do not automatically change pricing.
 
 
-## V3.14 update
+## V3.16 update
 - Drapery items can now contain multiple measurement sets under the same room/style.
 - Use “+ Add Another Measurement” to add a second, third, etc. full measurement row.
 - Each measurement row has its own:
@@ -73,7 +73,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Additional measurement rows can be removed without deleting the whole drapery item.
 
 
-## V3.14 fixes
+## V3.16 fixes
 - “+ Add Another Measurement” now duplicates the entire previous measurement row.
 - The copied row includes:
   - Quantity
@@ -87,7 +87,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Removed the accidental duplicated “Return” label.
 
 
-## V3.14 updates
+## V3.16 updates
 - Added `L/I` to the Drapery Lining dropdown.
 - L/I remains uppercase in the printed invoice description.
 - FL is now always available for drapery measurements.
@@ -99,7 +99,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Toggle changes also sync all other measurement values first, preventing typed entries from disappearing.
 
 
-## V3.14 updates
+## V3.16 updates
 - Drapery Style dropdown now uses:
   - Pinch Pleat
   - Euro Pleat
@@ -126,7 +126,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Drapery invoice Quantity now totals all measurement-row quantities in that drapery item.
 
 
-## V3.14 updates
+## V3.16 updates
 
 ### Roman Shades
 - Inside Mount / Outside Mount selector.
@@ -156,7 +156,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 - Required deposit prints on the supply line and in the invoice totals.
 
 
-## V3.14 updates
+## V3.16 updates
 
 ### Supabase sync + autosave
 - Added local autosave so a page refresh does not wipe the current invoice draft.
@@ -184,7 +184,7 @@ V3.14: repaired preview, embedded logo, Designers page, designer deletion, phone
 This is a lightweight single-workspace sync setup designed for your own private workflow.
 
 
-## V3.14 updates
+## V3.16 updates
 
 ### Roman Shades — top treatment
 - Replaced the old separate Flaps / Valance checkboxes with a 3-way selector:
@@ -198,3 +198,36 @@ This is a lightweight single-workspace sync setup designed for your own private 
 - Price defaults to $20 and remains fully editable.
 - Flaps / Valance price is included in the Roman shade calculation per shade.
 - Older saved drafts using the previous Flaps / Valance fields are migrated automatically when opened.
+
+
+## V3.16 website password
+- Added a password gate to both the Invoice Builder and Designers pages.
+- Password: `Familyrules` (case-sensitive).
+- The password itself is not stored in plain text in the JavaScript; the page checks a SHA-256 hash.
+- After a successful login, that browser/device stays unlocked until **Lock Website** is pressed.
+- Important: because this is a static GitHub Pages site, this is a convenience/privacy gate, not a substitute for Supabase Auth and restrictive RLS policies.
+
+
+## V3.16 password fix
+- Password gate is forced on new browser sessions.
+- Password: Familyrules
+- Reloading the same tab stays unlocked so active invoice work is not interrupted.
+- Closing the tab/browser and reopening requires the password again.
+- Lock Website immediately returns to the password screen.
+- Removed the older permanent localStorage unlock flag.
+- Supabase public project URL and publishable key are pre-filled in supabase-config.js.
+
+
+## V3.17 designer import
+Six designer/client records are automatically imported from the supplied invoice screenshots.
+The import is de-duplicated by phone/email, so opening the site again will not keep adding copies.
+
+Imported:
+- Michelle McSwain — (704) 691-4314 — michellemcswain29@yahoo.com
+- Clarissa + Michael — (917) 575-7710
+- New Old / Mary Ludemann — (407) 267-4450 — mary@newold.com
+- Beth Lomas — (704) 771-6370 — Lomasinteriors@gmail.com
+- Philip McHugh — (704) 421-4644 — email TBD
+- Lauren Casella — (704) 604-5515 — Lauren.e.casella@gmail.com
+
+When Supabase is connected, these records are also pushed into the shared Evana workspace so they appear on both phone and computer.

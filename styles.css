@@ -504,3 +504,30 @@ input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
 .sync-strip-actions{display:flex;gap:10px;flex-wrap:wrap}
 @media (max-width: 820px){.sync-strip{margin:10px 12px 0;flex-direction:column;align-items:flex-start}}
 \n\n/* ---------- V3.14 Roman top treatment ---------- */\n.three-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}\n.three-choice label{width:100%}\n.roman-treatment-popup{margin-top:10px;padding:14px;border:1px solid #d6c6ae;border-radius:12px;background:#fffaf0;box-shadow:0 8px 22px rgba(37,52,45,.06)}\n.roman-treatment-popup-title{margin-bottom:10px;color:var(--forest);font-family:Georgia,serif;font-size:16px;font-weight:700}\n@media(max-width:620px){.three-choice{grid-template-columns:1fr 1fr 1fr}.roman-treatment-popup .grid-2{grid-template-columns:1fr}}\n
+
+/* ---------- V3.15 Website password gate ---------- */
+body.auth-locked{overflow:hidden;}
+body.auth-locked > :not(.auth-gate){visibility:hidden !important;pointer-events:none !important;}
+.auth-gate{
+  position:fixed;inset:0;z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;background:linear-gradient(145deg,#153b2f,#0b251d 62%,#081c16);
+  visibility:visible !important;pointer-events:auto !important;
+}
+body:not(.auth-locked) .auth-gate{display:none;}
+.auth-card{
+  width:min(430px,100%);padding:32px 30px 28px;border:1px solid rgba(241,233,222,.22);
+  border-radius:20px;background:#f8f3eb;box-shadow:0 28px 80px rgba(0,0,0,.35);text-align:center;
+}
+.auth-mark{
+  width:68px;height:68px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid #b79a64;background:#173c30;color:#f1e9de;font-family:Georgia,serif;font-size:28px;
+}
+.auth-card h1{margin:5px 0 8px;color:#173c30;font:500 34px/1.1 Georgia,serif;}
+.auth-card p{margin:0 0 20px;color:#746d63;}
+.auth-card label{display:block;text-align:left;color:#173c30;font-weight:800;font-size:12px;}
+.auth-card input{margin-top:7px;width:100%;font-size:17px;letter-spacing:.03em;}
+.auth-error{min-height:22px;padding-top:7px;color:#9a3f31;font-size:12px;font-weight:800;text-align:left;}
+.auth-submit{width:100%;margin-top:4px;}
+.auth-note{margin-top:14px;color:#8a8278;font-size:10px;line-height:1.4;}
+.lock-site-btn{white-space:nowrap;}

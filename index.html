@@ -4,9 +4,26 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Evana Draperies Invoice Builder</title>
-  <link rel="stylesheet" href="styles.css?v=3.14" />
+  <link rel="stylesheet" href="styles.css?v=3.17" />
 </head>
-<body>
+<body class="auth-locked">
+  <section class="auth-gate" aria-label="Evana login">
+    <div class="auth-card">
+      <div class="auth-mark">ED</div>
+      <div class="eyebrow">PRIVATE WORKROOM TOOL</div>
+      <h1>Evana Draperies</h1>
+      <p>Enter the website password to continue.</p>
+      <form id="authForm">
+        <label>Password
+          <input id="sitePassword" type="password" autocomplete="current-password" placeholder="Password" required>
+        </label>
+        <div id="authError" class="auth-error" role="alert"></div>
+        <button class="btn primary auth-submit" type="submit">Enter</button>
+      </form>
+      <div class="auth-note">This device will stay unlocked until you choose Lock Website.</div>
+    </div>
+  </section>
+
   <header class="app-header">
     <div class="brand-wrap">
       <div class="brand-logo-shell">
@@ -15,12 +32,13 @@
       <div class="brand-copy">
         <div class="eyebrow light">PRIVATE WORKROOM TOOL</div>
         <h1>Evana Draperies</h1>
-        <p>Estimate & Invoice Studio <span class="build-badge">V3.14</span></p>
+        <p>Estimate & Invoice Studio <span class="build-badge">V3.17</span></p>
       </div>
     </div>
     <div class="header-actions">
       <button class="btn header-btn" id="clientsBtn" type="button">Designers</button>
       <button class="btn header-btn" id="dashboardBtn">Dashboard</button>
+      <button class="btn header-btn lock-site-btn" type="button">Lock Website</button>
       <button class="btn gold" id="printBtn">Print / Save PDF</button>
     </div>
   </header>
@@ -239,9 +257,10 @@
     </article>
   </template>
 
+  <script src="auth.js?v=3.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js?v=3.14"></script>
-  <script src="sync.js?v=3.14"></script>
-  <script src="app.js?v=3.14"></script>
+  <script src="supabase-config.js?v=3.17"></script>
+  <script src="sync.js?v=3.17"></script>
+  <script src="app.js?v=3.17"></script>
 </body>
 </html>

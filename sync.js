@@ -11,6 +11,129 @@
   let statusListeners = [];
   let saveTimer = null;
 
+  const IMPORTED_DESIGNERS = [
+    {
+      id: "designer_import_michelle_mcswain",
+      name: "Michelle McSwain",
+      contact: "",
+      address: "",
+      phones: ["(704) 691-4314", ""],
+      emails: ["michellemcswain29@yahoo.com", ""],
+      notes: ""
+    },
+    {
+      id: "designer_import_clarissa_michael",
+      name: "Clarissa + Michael",
+      contact: "",
+      address: "",
+      phones: ["(917) 575-7710", ""],
+      emails: ["", ""],
+      notes: "Email not provided."
+    },
+    {
+      id: "designer_import_new_old_mary_ludemann",
+      name: "New Old",
+      contact: "Mary Ludemann",
+      address: "",
+      phones: ["(407) 267-4450", ""],
+      emails: ["mary@newold.com", ""],
+      notes: ""
+    },
+    {
+      id: "designer_import_beth_lomas",
+      name: "Beth Lomas",
+      contact: "",
+      address: "",
+      phones: ["(704) 771-6370", ""],
+      emails: ["Lomasinteriors@gmail.com", ""],
+      notes: ""
+    },
+    {
+      id: "designer_import_philip_mchugh",
+      name: "Philip McHugh",
+      contact: "",
+      address: "",
+      phones: ["(704) 421-4644", ""],
+      emails: ["", ""],
+      notes: "Email: TBD"
+    },
+    {
+      id: "designer_import_lauren_casella",
+      name: "Lauren Casella",
+      contact: "",
+      address: "",
+      phones: ["(704) 604-5515", ""],
+      emails: ["Lauren.e.casella@gmail.com", ""],
+      notes: ""
+    }
+  ];
+
+  function cleanPhone(value=""){
+    return String(value||"").replace(/\D/g,"").slice(-10);
+  }
+  function cleanEmail(value=""){
+    return String(value||"").trim().toLowerCase();
+  }
+  function cleanName(value=""){
+    return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
+  }
+
+  function findMatchingDesigner(clients, seed){
+    const seedPhones = (seed.phones||[]).map(cleanPhone).filter(Boolean);
+    const seedEmails = (seed.emails||[]).map(cleanEmail).filter(Boolean);
+
+    return clients.find(c=>{
+      const cPhones = (c.phones||[]).map(cleanPhone).filter(Boolean);
+      const cEmails = (c.emails||[]).map(cleanEmail).filter(Boolean);
+
+      if(seedPhones.some(p=>cPhones.includes(p))) return true;
+      if(seedEmails.some(e=>cEmails.includes(e))) return true;
+
+      // Name fallback only if phone/email are unavailable.
+      return cleanName(c.name) === cleanName(seed.name) &&
+             cleanName(c.contact||"") === cleanName(seed.contact||"");
+    });
+  }
+
+  function mergeImportedDesigners(bundle){
+    const normalized = normalizeBundle(bundle);
+    const clients = Array.isArray(normalized.clients) ? [...normalized.clients] : [];
+    let changed = false;
+
+    IMPORTED_DESIGNERS.forEach(seed=>{
+      const existing = findMatchingDesigner(clients, seed);
+
+      if(!existing){
+        clients.push(JSON.parse(JSON.stringify(seed)));
+        changed = true;
+        return;
+      }
+
+      // Fill missing information without overwriting anything the user already edited.
+      if(!existing.name && seed.name){ existing.name = seed.name; changed = true; }
+      if(!existing.contact && seed.contact){ existing.contact = seed.contact; changed = true; }
+      if(!existing.address && seed.address){ existing.address = seed.address; changed = true; }
+
+      existing.phones = Array.isArray(existing.phones) ? existing.phones : ["",""];
+      existing.emails = Array.isArray(existing.emails) ? existing.emails : ["",""];
+
+      if(!existing.phones[0] && seed.phones[0]){ existing.phones[0] = seed.phones[0]; changed = true; }
+      if(!existing.phones[1] && seed.phones[1]){ existing.phones[1] = seed.phones[1]; changed = true; }
+      if(!existing.emails[0] && seed.emails[0]){ existing.emails[0] = seed.emails[0]; changed = true; }
+      if(!existing.emails[1] && seed.emails[1]){ existing.emails[1] = seed.emails[1]; changed = true; }
+
+      if(!existing.notes && seed.notes){ existing.notes = seed.notes; changed = true; }
+    });
+
+    normalized.clients = clients;
+    if(changed){
+      normalized.updatedAt = new Date().toISOString();
+    }
+
+    return { bundle: normalized, changed };
+  }
+
+
   function safeParse(raw, fallback){
     try { return JSON.parse(raw); } catch { return fallback; }
   }
@@ -141,16 +264,27 @@
     const local = readLocalBundle();
     await init();
     const remote = await fetchRemoteBundle();
+
     let winner = local;
     if(remote && hasContent(remote) && (!hasContent(local) || newer(remote, local))){
       winner = remote;
     }
-    winner = writeLocalBundle(winner);
-    if(!remote && hasContent(local) && supabaseClient){
-      setTimeout(() => { pushBundle(local); }, 0);
-    } else if(remote && hasContent(local) && newer(local, remote) && supabaseClient){
-      setTimeout(() => { pushBundle(local); }, 0);
+
+    const merged = mergeImportedDesigners(winner);
+    winner = writeLocalBundle(merged.bundle);
+
+    const remoteNeedsUpdate =
+      !!supabaseClient &&
+      (
+        !remote ||
+        merged.changed ||
+        newer(winner, remote)
+      );
+
+    if(remoteNeedsUpdate){
+      setTimeout(() => { pushBundle(winner); }, 0);
     }
+
     return winner;
   }
   async function savePartial(partial, opts={}){
@@ -172,10 +306,20 @@
     const local = readLocalBundle();
     await init();
     const remote = await fetchRemoteBundle();
+
+    let winner = local;
     if(remote && newer(remote, local)){
-      return writeLocalBundle(remote);
+      winner = remote;
     }
-    return local;
+
+    const merged = mergeImportedDesigners(winner);
+    winner = writeLocalBundle(merged.bundle);
+
+    if(merged.changed && supabaseClient){
+      setTimeout(() => { pushBundle(winner); }, 0);
+    }
+
+    return winner;
   }
   window.EvanaSync = {
     init,
