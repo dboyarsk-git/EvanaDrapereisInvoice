@@ -167,19 +167,100 @@ function renderItem(room,item,index){
 function options(arr,selected){ return arr.map(v=>`<option ${v===selected?"selected":""}>${esc(v)}</option>`).join(""); }
 function checkChips(arr,selected=[]){ return arr.map(v=>`<label class="check-chip"><input type="checkbox" class="extra-check" value="${esc(v)}" ${selected.includes(v)?"checked":""}>${esc(v)}</label>`).join(""); }
 
+
+function legacyMeasurementFromItem(i){
+  return {
+    quantity: Math.max(1,num(i.quantity)||1),
+    pieceType: i.pieceType || "Pair",
+    widths: i.widths ?? 1,
+    includeFL: i.includeFL !== false,
+    fl: i.fl ?? "",
+    fw: i.fw ?? "",
+    includeReturn: !!i.includeReturn,
+    returnValue: i.returnValue ?? "",
+    includeOverlap: !!i.includeOverlap,
+    overlapValue: i.overlapValue ?? ""
+  };
+}
+
+function ensureDraperyMeasurements(i){
+  if(!Array.isArray(i.measurements) || !i.measurements.length){
+    i.measurements=[legacyMeasurementFromItem(i)];
+  }
+  i.measurements=i.measurements.map(m=>({
+    quantity: Math.max(1,num(m.quantity)||1),
+    pieceType: m.pieceType || "Pair",
+    widths: m.widths ?? 1,
+    includeFL: m.includeFL !== false,
+    fl: m.fl ?? "",
+    fw: m.fw ?? "",
+    includeReturn: !!m.includeReturn,
+    returnValue: m.returnValue ?? "",
+    includeOverlap: !!m.includeOverlap,
+    overlapValue: m.overlapValue ?? ""
+  }));
+  return i.measurements;
+}
+
+function measurementLineHTML(m,index,canRemove){
+  return `
+    <div class="measurement-set" data-measure-index="${index}">
+      <div class="measurement-set-head">
+        <span class="measurement-set-title">${index===0?"Primary Measurement":`Additional Measurement ${index}`}</span>
+        ${canRemove?`<button type="button" class="remove-measurement-btn" data-measure-index="${index}">Remove</button>`:""}
+      </div>
+
+      <div class="measurement-toggle-row">
+        <label class="measurement-toggle ${m.includeFL?"active":""}">
+          <input type="checkbox" class="m-include-fl" ${m.includeFL?"checked":""}>
+          <span>FL</span>
+        </label>
+        <label class="measurement-toggle ${m.includeReturn?"active":""}">
+          <input type="checkbox" class="m-include-return" ${m.includeReturn?"checked":""}>
+          <span>Return</span>
+        </label>
+        <label class="measurement-toggle ${m.includeOverlap?"active":""}">
+          <input type="checkbox" class="m-include-overlap" ${m.includeOverlap?"checked":""}>
+          <span>Overlap</span>
+        </label>
+      </div>
+
+      <div class="drapery-measure-row drapery-measure-row-flex">
+        <label class="tiny-qty">Q
+          <input class="m-quantity" type="number" min="1" max="99" step="1" value="${m.quantity}" inputmode="numeric">
+        </label>
+        <label>Pair / Panel
+          <select class="m-piece">${options(["Pair","Panel"],m.pieceType)}</select>
+        </label>
+        <label>Q Width
+          <input class="m-widths" type="number" min="0" step="0.5" value="${m.widths}">
+        </label>
+        ${m.includeFL?`<label>FL
+          <div class="inch-field"><input class="m-fl" type="number" min="0" step="0.25" value="${m.fl}"><span>"</span></div>
+        </label>`:""}
+        <label>FW
+          <div class="inch-field"><input class="m-fw" type="number" min="0" step="0.25" value="${m.fw}"><span>"</span></div>
+        </label>
+        ${m.includeReturn?`<label>Return
+          <div class="inch-field"><span class="measurement-prefix">R-</span><input class="m-return" type="number" min="0" step="0.25" value="${m.returnValue}"><span>"</span></div>
+        </label>`:""}
+        ${m.includeOverlap?`<label>Overlap
+          <div class="inch-field"><input class="m-overlap" type="number" min="0" step="0.25" value="${m.overlapValue}"><span>"</span></div>
+        </label>`:""}
+      </div>
+    </div>
+  `;
+}
+
 function draperyForm(i){
   i.style ||= "Euro Pinch Pleat";
-  i.pieceType ||= "Pair";
-  i.widths ??= 1;
-  i.fl ??="";
-  i.fw ??="";
   i.lining ||= "Lined";
   i.extras ||= [];
   i.unitPrice ??= PRICE.drapery[i.style]?.range[0]||0;
-  i.quantity ??=1;
   i.customStyle||="";
   i.itemNote||="";
   i.showPricing ??= true;
+  ensureDraperyMeasurements(i);
 
   const calc = draperyCalc(i);
   const surchargeBadges = calc.reasons.length
@@ -195,25 +276,13 @@ function draperyForm(i){
   </div>
 
   <div class="workflow-label">MEASUREMENTS</div>
-  <div class="drapery-measure-row">
-    <label class="tiny-qty">Q
-      <input class="f-quantity" type="number" min="1" max="9" step="1" value="${i.quantity}" inputmode="numeric">
-    </label>
-    <label>Pair / Panel
-      <select class="f-piece">${options(["Pair","Panel"],i.pieceType)}</select>
-    </label>
-    <label>Q Width
-      <input class="f-widths" type="number" min="0" step="0.5" value="${i.widths}">
-    </label>
-    <label>FL
-      <div class="inch-field"><input class="f-fl" type="number" min="0" step="0.25" value="${i.fl}"><span>"</span></div>
-    </label>
-    <label>FW
-      <div class="inch-field"><input class="f-fw" type="number" min="0" step="0.25" value="${i.fw}"><span>"</span></div>
-    </label>
+  <div class="measurement-sets-wrap">
+    ${i.measurements.map((m,idx)=>measurementLineHTML(m,idx,idx>0)).join("")}
   </div>
 
-  <div class="grid grid-2">
+  <button type="button" class="btn add-measurement-btn">+ Add Another Measurement</button>
+
+  <div class="grid grid-2 drapery-common-fields">
     <label>Lining
       <select class="f-lining">${options(LININGS,i.lining)}</select>
     </label>
@@ -346,31 +415,173 @@ function updateDraperySurcharges(node,item){
     : `<span class="no-surcharge">No automatic surcharge currently applies.</span>`;
 }
 
+function bindDraperyMeasurements(node,item){
+  ensureDraperyMeasurements(item);
+
+  $$(".measurement-set",node).forEach(setNode=>{
+    const idx=num(setNode.dataset.measureIndex);
+    const m=item.measurements[idx];
+    if(!m) return;
+
+    const bindM=(sel,key,convert=v=>v,rerender=false)=>{
+      const el=$(sel,setNode);
+      if(!el) return;
+      const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input";
+      el.addEventListener(evt,()=>{
+        m[key]=convert(el.type==="checkbox"?el.checked:el.value);
+        if(rerender){
+          renderRooms();
+        }else{
+          updateDraperySurcharges(node,item);
+          renderPriceSummary(node,item);
+          renderPreview();
+          renderDiscountSummary();
+        }
+      });
+    };
+
+    bindM(".m-quantity","quantity",num);
+    bindM(".m-piece","pieceType",v=>v);
+    bindM(".m-widths","widths",num);
+    bindM(".m-include-fl","includeFL",Boolean,true);
+    bindM(".m-fl","fl",num);
+    bindM(".m-fw","fw",num);
+    bindM(".m-include-return","includeReturn",Boolean,true);
+    bindM(".m-return","returnValue",num);
+    bindM(".m-include-overlap","includeOverlap",Boolean,true);
+    bindM(".m-overlap","overlapValue",num);
+  });
+
+  const addBtn=$(".add-measurement-btn",node);
+  if(addBtn){
+    addBtn.addEventListener("click",()=>{
+      const last=item.measurements[item.measurements.length-1] || legacyMeasurementFromItem(item);
+      item.measurements.push({
+        quantity:1,
+        pieceType:last.pieceType||"Pair",
+        widths:last.widths||1,
+        includeFL:last.includeFL!==false,
+        fl:"",
+        fw:"",
+        includeReturn:!!last.includeReturn,
+        returnValue:"",
+        includeOverlap:!!last.includeOverlap,
+        overlapValue:""
+      });
+      renderRooms();
+      renderPreview();
+    });
+  }
+
+  $$(".remove-measurement-btn",node).forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const idx=num(btn.dataset.measureIndex);
+      if(idx>0 && item.measurements.length>1){
+        item.measurements.splice(idx,1);
+        renderRooms();
+        renderPreview();
+        renderDiscountSummary();
+      }
+    });
+  });
+}
+
 function bindItemForm(node,item){
   const bind=(sel,key,convert=v=>v,rerender=false)=>{ const el=$(sel,node); if(!el) return; const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input"; el.addEventListener(evt,e=>{ item[key]=convert(el.type==="checkbox"?el.checked:el.value); if(rerender) renderRooms(); else { updateDraperySurcharges(node,item); renderPriceSummary(node,item); renderPreview(); renderDiscountSummary(); } }); };
-  bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num); bind(".f-fl","fl",num); bind(".f-fw","fw",num); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
+
+  if(item.type==="drapery"){
+    bindDraperyMeasurements(node,item);
+    bind(".f-style","style",v=>v,true);
+    bind(".f-lining","lining",v=>v,true);
+    bind(".f-custom-style","customStyle");
+    bind(".f-item-note","itemNote");
+    bind(".f-unit-price","unitPrice",num);
+    bind(".f-override","overridePrice",v=>v===""?"":num(v));
+    bind(".f-show-pricing","showPricing",Boolean,true);
+  }else{
+    bind(".f-style","style",v=>v,true); bind(".f-piece","pieceType",v=>v,true); bind(".f-widths","widths",num); bind(".f-fl","fl",num); bind(".f-fw","fw",num); bind(".f-lining","lining",v=>v,true); bind(".f-custom-style","customStyle"); bind(".f-item-note","itemNote"); bind(".f-quantity","quantity",num); bind(".f-unit-price","unitPrice",num); bind(".f-override","overridePrice",v=>v===""?"":num(v)); bind(".f-motor-cost","motorCost",num); bind(".f-pattern-charge","patternMatchCharge",num); bind(".f-description","description"); bind(".f-size","size",v=>v,true); bind(".f-show-pricing","showPricing",Boolean,true);
+  }
+
   $$(".extra-check",node).forEach(ch=>ch.addEventListener("change",()=>{ item.extras=$$(".extra-check:checked",node).map(x=>x.value); renderRooms(); renderPreview(); }));
 }
-
 function draperyCalc(i){
-  const entered=num(i.widths), billable=Math.ceil(entered);
-  const base = billable*num(i.unitPrice)*Math.max(1,num(i.quantity));
-  let pct=0; const reasons=[];
-  if(i.pieceType==="Pair"){
-    if(billable>=8){pct+=100;reasons.push("8+ widths per pair: +100% (double)");}
-    else if(billable>=6){pct+=20;reasons.push("6–7 widths per pair: +20%");}
-  }
-  const fl=num(i.fl);
-  if(fl>=160){pct+=100;reasons.push("Length 160\"+: +100% (double)");}
-  else if(fl>=120){pct+=50;reasons.push("Length 120–159\": +50%");}
-  else if(fl>96){pct+=20;reasons.push("Length 97–119\": +20%");}
-  if((i.extras||[]).includes("Pattern Matching")){pct+=20;reasons.push("Pattern matching: +20%");}
-  if(i.lining==="Bump" || (i.extras||[]).includes("Bump")){pct+=20;reasons.push("Bump: +20%");}
-  const calculated=base*(1+pct/100);
-  const final = i.overridePrice!=="" ? num(i.overridePrice) : calculated;
-  return {base,pct,reasons,calculated,final,billable,entered};
-}
+  const measurements=ensureDraperyMeasurements(i);
+  const globalPct =
+    ((i.extras||[]).includes("Pattern Matching") ? 20 : 0) +
+    ((i.lining==="Bump" || (i.extras||[]).includes("Bump")) ? 20 : 0);
 
+  let base=0;
+  let calculated=0;
+  let totalQty=0;
+  const reasons=[];
+  const lines=[];
+
+  measurements.forEach((m,idx)=>{
+    const entered=num(m.widths);
+    const billable=Math.ceil(entered);
+    const qty=Math.max(1,num(m.quantity)||1);
+    totalQty += qty;
+
+    const lineBase=billable*num(i.unitPrice)*qty;
+    base += lineBase;
+
+    let linePct=0;
+    const lineReasons=[];
+
+    if(m.pieceType==="Pair"){
+      if(billable>=8){
+        linePct+=100;
+        lineReasons.push("8+ widths per pair: +100% (double)");
+      }else if(billable>=6){
+        linePct+=20;
+        lineReasons.push("6–7 widths per pair: +20%");
+      }
+    }
+
+    const fl=m.includeFL===false ? 0 : num(m.fl);
+    if(fl>=160){
+      linePct+=100;
+      lineReasons.push('Length 160"+: +100% (double)');
+    }else if(fl>=120){
+      linePct+=50;
+      lineReasons.push('Length 120–159": +50%');
+    }else if(fl>96){
+      linePct+=20;
+      lineReasons.push('Length 97–119": +20%');
+    }
+
+    const lineCalculated=lineBase*(1+(linePct+globalPct)/100);
+    calculated += lineCalculated;
+
+    lines.push({
+      entered,billable,qty,
+      base:lineBase,
+      pct:linePct+globalPct,
+      localPct:linePct,
+      reasons:lineReasons,
+      calculated:lineCalculated
+    });
+
+    lineReasons.forEach(r=>{
+      reasons.push(measurements.length>1 ? `Measurement ${idx+1}: ${r}` : r);
+    });
+  });
+
+  if((i.extras||[]).includes("Pattern Matching")) reasons.push("Pattern matching: +20%");
+  if(i.lining==="Bump" || (i.extras||[]).includes("Bump")) reasons.push("Bump: +20%");
+
+  const final=i.overridePrice!=="" ? num(i.overridePrice) : calculated;
+  return {
+    base,
+    globalPct,
+    reasons,
+    calculated,
+    final,
+    totalQty,
+    lines,
+    measurements
+  };
+}
 function romanCalc(i){
   const sqftRaw=(num(i.fw)*num(i.fl))/144;
   const sqft=roundQuarter(sqftRaw);
@@ -412,7 +623,18 @@ function calcItem(i){ return i.type==="drapery"?draperyCalc(i):i.type==="roman"?
 function renderPriceSummary(node,item){
   const box=$(".price-summary",node); if(!box) return; const c=calcItem(item);
   let details="";
-  if(item.type==="drapery") details=`<div>Entered widths: ${c.entered} → Billable widths: <strong>${c.billable}</strong></div><div>Base: ${money(c.base)}</div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Total surcharge: +${c.pct}%</div>`;
+  if(item.type==="drapery") details=`
+    ${c.lines.map((line,idx)=>`
+      <div class="pricing-measure-line">
+        <strong>Measurement ${idx+1}</strong>
+        <span>Widths: ${line.entered} → ${line.billable} billable</span>
+        <span>Base: ${money(line.base)}</span>
+        <span>Surcharge: +${line.pct}%</span>
+        <span>Calculated: ${money(line.calculated)}</span>
+      </div>
+    `).join("")}
+    <div>Combined base: ${money(c.base)}</div>
+  `;
   if(item.type==="roman") details=`<div>Sq. ft.: ${c.sqftRaw.toFixed(4)} → <strong>${c.sqft.toFixed(2)}</strong></div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Extras per shade: ${money(c.extrasEach)}</div>`;
   if(item.type==="pillow") details=`<div>Base each: ${money(c.baseEach)}</div>${c.reasons.map(r=>`<div>${esc(r)}</div>`).join("")}<div>Extras each: ${money(c.extraEach)}</div>`;
   if(item.type==="supply") details=`<div>Supply line item</div>`;
@@ -425,18 +647,28 @@ function itemDescription(i){
     const style=i.style==="Custom"?(i.customStyle||"Custom Drapery"):i.style;
     const c=draperyCalc(i);
     const liningText=i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined";
-    const piece=String(i.pieceType||"Pair").toLowerCase();
-    const qty=Math.max(1,num(i.quantity)||1);
-    const widths=num(i.widths)||0;
-    const bits=[
-      `${style} (${liningText})`,
-      `${qty} ${piece}${qty>1?"s":""}, ${widths} width${widths===1?"":"s"}, FL-${num(i.fl)||""}", FW-${num(i.fw)||""}"`
-    ];
+    const bits=[`${style} (${liningText})`];
+
+    c.measurements.forEach(m=>{
+      const piece=String(m.pieceType||"Pair").toLowerCase();
+      const qty=Math.max(1,num(m.quantity)||1);
+      const widths=num(m.widths)||0;
+      const measurements=[];
+      if(m.includeFL!==false) measurements.push(`FL-${num(m.fl)||""}"`);
+      measurements.push(`FW-${num(m.fw)||""}"`);
+      if(m.includeReturn) measurements.push(`R-${num(m.returnValue)||""}"`);
+      if(m.includeOverlap) measurements.push(`Overlap-${num(m.overlapValue)||""}"`);
+
+      bits.push(`${qty} ${piece}${qty>1?"s":""}, ${widths} width${widths===1?"":"s"}${measurements.length?`, ${measurements.join(", ")}`:""}`);
+    });
+
     c.reasons.forEach(r=>bits.push(r));
+
     (i.extras||[]).forEach(x=>{
       if(x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
       bits.push(x);
     });
+
     if(i.itemNote) bits.push(i.itemNote);
     return bits.filter(Boolean).join("\n");
   }

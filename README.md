@@ -44,4 +44,30 @@ Data is currently stored in browser localStorage for this mock version.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
 
-V3.6: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
+V3.8: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
+
+
+## V3.8 update
+- FL can now be toggled on/off for each drapery line item.
+- When FL is off, no finished-length surcharge is applied and FL is omitted from the invoice description.
+- Added optional Return measurement toggle. When enabled it prints as R-#".
+- Added optional Overlap measurement toggle. When enabled it prints as Overlap-#".
+- Return and Overlap are informational measurements only and do not automatically change pricing.
+
+
+## V3.8 update
+- Drapery items can now contain multiple measurement sets under the same room/style.
+- Use “+ Add Another Measurement” to add a second, third, etc. full measurement row.
+- Each measurement row has its own:
+  - Quantity
+  - Pair / Panel
+  - Width count
+  - Optional FL
+  - FW
+  - Optional Return
+  - Optional Overlap
+- Additional measurement rows print directly underneath the first measurement on the invoice.
+- Automatic width and length surcharges are calculated independently for each measurement row.
+- Pattern Matching and Bump remain item-wide percentage charges and apply to each measurement row.
+- The invoice Quantity column totals the quantities from all measurement rows in that drapery item.
+- Additional measurement rows can be removed without deleting the whole drapery item.
