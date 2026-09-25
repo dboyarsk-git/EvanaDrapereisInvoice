@@ -55,16 +55,34 @@ function esc(s=""){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':
 function roundQuarter(v){ return Math.round((Number(v)||0)*4)/4; }
 function num(v){ return Number(v)||0; }
 
+function localISODate(d=new Date()){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function formatPhone(value=""){
+  const digits=String(value||"").replace(/\D/g,"").slice(0,10);
+  if(!digits) return "";
+  if(digits.length<4) return `(${digits}`;
+  if(digits.length<7) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+}
+function normalizeDesigner(c={}){
+  const phones=Array.isArray(c.phones)?c.phones:[c.phone1||c.clientPhone1||c.phone||"",c.phone2||c.clientPhone2||""];
+  const emails=Array.isArray(c.emails)?c.emails:[c.email1||c.clientEmail1||c.email||"",c.email2||c.clientEmail2||""];
+  return {...c,id:c.id||uid("designer"),name:c.name||c.companyName||c.clientName||"",contact:c.contact||c.contactName||"",address:c.address||c.projectAddress||c.billingAddress||"",phones:[formatPhone(phones[0]||""),formatPhone(phones[1]||"")],emails:[emails[0]||"",emails[1]||""],notes:c.notes||""};
+}
+function clientPhone1(c={}){return ((c.phones||[])[0]||c.phone1||c.clientPhone1||c.phone||"");}
+function clientPhone2(c={}){return ((c.phones||[])[1]||c.phone2||c.clientPhone2||"");}
+function clientEmail1(c={}){return ((c.emails||[])[0]||c.email1||c.clientEmail1||c.email||"");}
+function clientEmail2(c={}){return ((c.emails||[])[1]||c.email2||c.clientEmail2||"");}
+
 function seed(){
   try { state.clients = JSON.parse(localStorage.getItem(LS_CLIENTS) || "[]"); } catch { state.clients=[]; }
   try { state.invoices = JSON.parse(localStorage.getItem(LS_INVOICES) || "[]"); } catch { state.invoices=[]; }
-  if(!state.clients.length){
-    state.clients = [
-      {id:uid("client"),name:"Workmon",contact:"Mary Workmon",address:"114 Gregg Street",phones:[""],emails:[""],notes:""},
-      {id:uid("client"),name:"Demo Designer",contact:"Sara Designer",address:"Charlotte, NC",phones:["704-555-0101"],emails:["sara@example.com"],notes:"Demo record"}
-    ];
-    persistClients();
-  }
+  state.clients = state.clients.map(normalizeDesigner);
+  persistClients();
   populateClients();
   $("#docDate").value = localISODate();
   $("#invoiceNumber").value = String(nextInvoiceNumber());
@@ -72,7 +90,6 @@ function seed(){
   addRoom("Living Room / Dining Room");
   renderPreview();
 }
-
 function persistClients(){ localStorage.setItem(LS_CLIENTS, JSON.stringify(state.clients)); }
 function persistInvoices(){ localStorage.setItem(LS_INVOICES, JSON.stringify(state.invoices)); }
 function nextInvoiceNumber(){
@@ -84,12 +101,19 @@ function nextInvoiceNumber(){
 
 function populateClients(){
   const sel=$("#clientSelect"); const current=sel.value;
-  sel.innerHTML = state.clients.map(c=>`<option value="${c.id}">${esc(c.name)}${c.contact?` — ${esc(c.contact)}`:""}</option>`).join("");
+  if(!state.clients.length){
+    sel.innerHTML=`<option value="">No designers yet — add one</option>`;
+    $("#projectAddress").value="";
+    renderClientsList(); renderDashboard();
+    return;
+  }
+  sel.innerHTML=state.clients.map(c=>`<option value="${c.id}">${esc(c.name)}${c.contact?` — ${esc(c.contact)}`:""}</option>`).join("");
   if(current && state.clients.some(c=>c.id===current)) sel.value=current;
-  if(!$("#projectAddress").value){ const c=selectedClient(); if(c) $("#projectAddress").value=c.address||""; }
+  if(!sel.value && state.clients[0]) sel.value=state.clients[0].id;
+  if(!$("#projectAddress").value){const c=selectedClient(); if(c) $("#projectAddress").value=c.address||"";}
   renderClientsList(); renderDashboard();
 }
-function selectedClient(){ return state.clients.find(c=>c.id===$("#clientSelect").value) || state.clients[0]; }
+function selectedClient(){ return state.clients.find(c=>c.id===$("#clientSelect").value) || null; }
 
 function addRoom(name=""){
   const room={id:uid("room"),name,notes:"",items:[]}; state.rooms.push(room);
@@ -400,22 +424,19 @@ function itemDescription(i){
   if(i.type==="drapery"){
     const style=i.style==="Custom"?(i.customStyle||"Custom Drapery"):i.style;
     const c=draperyCalc(i);
-    const liningText = i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined";
-    const piece = String(i.pieceType||"Pair").toLowerCase();
-    const qty = Math.max(1,num(i.quantity)||1);
-    const widths = num(i.widths)||0;
+    const liningText=i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined";
+    const piece=String(i.pieceType||"Pair").toLowerCase();
+    const qty=Math.max(1,num(i.quantity)||1);
+    const widths=num(i.widths)||0;
     const bits=[
       `${style} (${liningText})`,
       `${qty} ${piece}${qty>1?"s":""}, ${widths} width${widths===1?"":"s"}, FL-${num(i.fl)||""}", FW-${num(i.fw)||""}"`
     ];
-
     c.reasons.forEach(r=>bits.push(r));
-
     (i.extras||[]).forEach(x=>{
       if(x==="Pattern Matching" && c.reasons.some(r=>r.toLowerCase().includes("pattern matching"))) return;
       bits.push(x);
     });
-
     if(i.itemNote) bits.push(i.itemNote);
     return bits.filter(Boolean).join("\n");
   }
@@ -546,14 +567,14 @@ $("#clientSelect").addEventListener("change",()=>{const c=selectedClient(); if(c
 $("#refreshPreviewBtn").addEventListener("click",renderPreview);
 $("#printBtn").addEventListener("click",()=>{renderPreview(); window.print();});
 $("#newClientBtn").addEventListener("click",()=>$("#clientDialog").showModal());
-$("#clientsBtn").addEventListener("click",()=>{ window.location.href="clients.html"; });
+$("#clientsBtn").addEventListener("click",()=>{ window.location.href="designers.html"; });
 $("#dashboardBtn").addEventListener("click",()=>{renderDashboard();$("#dashboardDialog").showModal();});
 $("#closeClientsDialog").addEventListener("click",()=>$("#clientsDialog").close());
 $("#closeDashboardDialog").addEventListener("click",()=>$("#dashboardDialog").close());
 $("#clientForm").addEventListener("submit",e=>{
   if(e.submitter?.value==="cancel") return;
   e.preventDefault();
-  const c={id:uid("client"),name:$("#clientName").value.trim(),contact:$("#contactName").value.trim(),address:$("#clientAddress").value.trim(),phones:[formatPhone($("#clientPhone1").value.trim()),formatPhone($("#clientPhone2").value.trim())],emails:[$("#clientEmail1").value.trim(),$("#clientEmail2").value.trim()],notes:$("#clientNotes").value.trim()};
+  const c=normalizeDesigner({id:uid("designer"),name:$("#clientName").value.trim(),contact:$("#contactName").value.trim(),address:$("#clientAddress").value.trim(),phones:[$("#clientPhone1").value.trim(),$("#clientPhone2").value.trim()],emails:[$("#clientEmail1").value.trim(),$("#clientEmail2").value.trim()],notes:$("#clientNotes").value.trim()});
   if(!c.name) return;
   state.clients.push(c); persistClients(); populateClients(); $("#clientSelect").value=c.id; $("#projectAddress").value=c.address; $("#clientForm").reset(); $("#clientDialog").close(); renderPreview();
 });
@@ -569,14 +590,9 @@ $("#saveInvoiceBtn").addEventListener("click",()=>{
 });
 $("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
 
-
 ["#clientPhone1","#clientPhone2"].forEach(sel=>{
-  const el=$(sel);
-  if(!el) return;
-  el.addEventListener("input",()=>{
-    const pos=el.selectionStart;
-    el.value=formatPhone(el.value);
-  });
+  const el=$(sel); if(!el) return;
+  el.addEventListener("input",()=>{el.value=formatPhone(el.value);});
 });
 
 seed();

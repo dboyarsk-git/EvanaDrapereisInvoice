@@ -1,8 +1,8 @@
-# Evana Draperies Invoice Builder — V3.4
+# Evana Draperies Invoice Builder — V3.2
 
 GitHub Pages-ready static mockup.
 
-## V3.4 updates
+## V3.2 updates
 - Invoice numbering starts at 691 and auto-increments from saved invoices.
 - Date defaults automatically to today's date.
 - Euro Pinch Pleat is the default drapery style.
@@ -25,7 +25,7 @@ Then open:
 Data is currently stored in browser localStorage for this mock version.
 
 
-## V3.4 update
+## V3.2 update
 - Added editable discount controls at the end of the builder.
 - Discount can be entered as a percentage or flat dollar amount.
 - Custom discount label can be changed (for example: Designer Discount or Courtesy Discount).
@@ -34,7 +34,7 @@ Data is currently stored in browser localStorage for this mock version.
 - Saved invoices store the discount information and completed cash flow uses the final net total.
 
 
-## V3.4 fixes
+## V3.2 fixes
 - Supply is now a normal room item with Quantity, Description, Price Per Unit, and Final Price.
 - Supply items automatically total into the Supply line at the bottom of the invoice.
 - Removed the old Supply Total Override field.
@@ -44,23 +44,4 @@ Data is currently stored in browser localStorage for this mock version.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
 
-
-## V3.4 fixes
-- Drapery invoice descriptions now display like:
-  - Euro Pinch Pleat (lined)
-  - 1 pair, 1 width, FL-97", FW-66"
-- Automatic surcharge and optional-detail lines continue underneath.
-- Phone numbers display as (xxx) xxx-xxxx on the invoice and Clients page.
-- Phone fields auto-format while typing.
-- Removed the duplicate “Pattern Matching” description line when the automatic +20% pattern-matching surcharge is already shown.
-
-
-## V3.4 fixes
-- Added a visible V3.4 badge in the header so you can confirm GitHub is serving the newest build.
-- Drapery descriptions are forced to:
-  Euro Pinch Pleat (lined)
-  1 pair, 1 width, FL-97", FW-66"
-- Phone 1 / Email 1 now support both the current client schema and older saved client records.
-- Fixed the phone auto-format listener on the Add Client form.
-- Phone numbers are normalized to (xxx) xxx-xxxx when saved/displayed.
-- Fixed automatic date generation to use the browser's LOCAL date instead of UTC, preventing the date from jumping ahead at night.
+V3.6: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
