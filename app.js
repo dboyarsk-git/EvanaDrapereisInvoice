@@ -33,7 +33,7 @@ const PRICE = {
 };
 
 const DRAPERY_STYLES = ["Euro Pinch Pleat","Euro / Parisian","Pinch Pleat","Sheer Rod Pocket","Sheer Pinch Pleat","Rod Pocket","Flat Top","Goblet Pleat","Grommet","Ripple Tape","Custom"];
-const LININGS = ["No Lining","Lined","Interlined","Blackout","Blackout + Interlined","Bump","Custom"];
+const LININGS = ["No Lining","Lined","L/I","Interlined","Blackout","Blackout + Interlined","Bump","Custom"];
 const DRAPERY_EXTRAS = ["Pattern Matching","Fabric Band","Trim","Hand Side Hem","Mounted on Board","Attached Valance","Grommets","Hardware","Alteration","Bump","Custom Extra"];
 const ROMAN_EXTRAS = ["Motorized","Rowley Lifting System","Cordless Lifting System","Continuous Cord System","Stabilizing Fabric","Tailored Valance","Pattern Match","Inside Mount","Outside Mount","Hardware","Custom Extra"];
 const PILLOW_EXTRAS = ["Zipper","Turkish Corners","Box Construction","Pattern Matching","Cut Down Pillow Form","Custom Pillow Form","Down Insert","Trim","Custom Extra"];
@@ -173,8 +173,8 @@ function legacyMeasurementFromItem(i){
     quantity: Math.max(1,num(i.quantity)||1),
     pieceType: i.pieceType || "Pair",
     widths: i.widths ?? 1,
-    includeFL: i.includeFL !== false,
     fl: i.fl ?? "",
+    includeFW: i.includeFW !== false,
     fw: i.fw ?? "",
     includeReturn: !!i.includeReturn,
     returnValue: i.returnValue ?? "",
@@ -191,8 +191,8 @@ function ensureDraperyMeasurements(i){
     quantity: Math.max(1,num(m.quantity)||1),
     pieceType: m.pieceType || "Pair",
     widths: m.widths ?? 1,
-    includeFL: m.includeFL !== false,
     fl: m.fl ?? "",
+    includeFW: m.includeFW !== false,
     fw: m.fw ?? "",
     includeReturn: !!m.includeReturn,
     returnValue: m.returnValue ?? "",
@@ -211,9 +211,9 @@ function measurementLineHTML(m,index,canRemove){
       </div>
 
       <div class="measurement-toggle-row">
-        <label class="measurement-toggle ${m.includeFL?"active":""}">
-          <input type="checkbox" class="m-include-fl" ${m.includeFL?"checked":""}>
-          <span>FL</span>
+        <label class="measurement-toggle ${m.includeFW?"active":""}">
+          <input type="checkbox" class="m-include-fw" ${m.includeFW?"checked":""}>
+          <span>FW</span>
         </label>
         <label class="measurement-toggle ${m.includeReturn?"active":""}">
           <input type="checkbox" class="m-include-return" ${m.includeReturn?"checked":""}>
@@ -235,12 +235,12 @@ function measurementLineHTML(m,index,canRemove){
         <label>Q Width
           <input class="m-widths" type="number" min="0" step="0.5" value="${m.widths}">
         </label>
-        ${m.includeFL?`<label>FL
+        <label>FL
           <div class="inch-field"><input class="m-fl" type="number" min="0" step="0.25" value="${m.fl}"><span>"</span></div>
-        </label>`:""}
-        <label>FW
-          <div class="inch-field"><input class="m-fw" type="number" min="0" step="0.25" value="${m.fw}"><span>"</span></div>
         </label>
+        ${m.includeFW?`<label>FW
+          <div class="inch-field"><input class="m-fw" type="number" min="0" step="0.25" value="${m.fw}"><span>"</span></div>
+        </label>`:""}
         ${m.includeReturn?`<label>Return
           <div class="inch-field"><span class="measurement-prefix">R-</span><input class="m-return" type="number" min="0" step="0.25" value="${m.returnValue}"><span>"</span></div>
         </label>`:""}
@@ -251,7 +251,6 @@ function measurementLineHTML(m,index,canRemove){
     </div>
   `;
 }
-
 function draperyForm(i){
   i.style ||= "Euro Pinch Pleat";
   i.lining ||= "Lined";
@@ -281,7 +280,7 @@ function draperyForm(i){
   </div>
 
   <button type="button" class="btn add-measurement-btn">+ Add Another Measurement</button>
-  <div class="measurement-copy-note">New measurement rows copy the previous row so you only change what is different.</div>
+  <div class="measurement-copy-note">New measurement rows duplicate every value from the previous row. Change only what is different.</div>
 
   <div class="grid grid-2 drapery-common-fields">
     <label>Lining
@@ -416,10 +415,47 @@ function updateDraperySurcharges(node,item){
     : `<span class="no-surcharge">No automatic surcharge currently applies.</span>`;
 }
 
+function syncDraperyMeasurementsFromDOM(node,item){
+  ensureDraperyMeasurements(item);
+
+  $$(".measurement-set",node).forEach(setNode=>{
+    const idx=Number(setNode.dataset.measureIndex);
+    const m=item.measurements[idx];
+    if(!m) return;
+
+    const qty=$(".m-quantity",setNode);
+    const piece=$(".m-piece",setNode);
+    const widths=$(".m-widths",setNode);
+    const fl=$(".m-fl",setNode);
+    const fw=$(".m-fw",setNode);
+    const fwToggle=$(".m-include-fw",setNode);
+    const returnToggle=$(".m-include-return",setNode);
+    const returnValue=$(".m-return",setNode);
+    const overlapToggle=$(".m-include-overlap",setNode);
+    const overlapValue=$(".m-overlap",setNode);
+
+    if(qty) m.quantity=Math.max(1,num(qty.value)||1);
+    if(piece) m.pieceType=piece.value;
+    if(widths) m.widths=widths.value===""?"":num(widths.value);
+    if(fl) m.fl=fl.value===""?"":num(fl.value);
+
+    if(fwToggle) m.includeFW=fwToggle.checked;
+    if(fw) m.fw=fw.value===""?"":num(fw.value);
+
+    if(returnToggle) m.includeReturn=returnToggle.checked;
+    if(returnValue) m.returnValue=returnValue.value===""?"":num(returnValue.value);
+
+    if(overlapToggle) m.includeOverlap=overlapToggle.checked;
+    if(overlapValue) m.overlapValue=overlapValue.value===""?"":num(overlapValue.value);
+  });
+}
+
 function bindDraperyMeasurements(node,item){
   ensureDraperyMeasurements(item);
 
   const refreshItem=()=>{
+    // Capture every typed value BEFORE rebuilding the form.
+    syncDraperyMeasurementsFromDOM(node,item);
     renderRooms();
     renderPreview();
     renderDiscountSummary();
@@ -435,7 +471,8 @@ function bindDraperyMeasurements(node,item){
       if(!el) return;
       const evt=el.tagName==="SELECT" ? "change" : "input";
       el.addEventListener(evt,()=>{
-        m[key]=convert(el.value);
+        const raw=el.value;
+        m[key]=raw==="" ? "" : convert(raw);
         updateDraperySurcharges(node,item);
         renderPriceSummary(node,item);
         renderPreview();
@@ -451,27 +488,37 @@ function bindDraperyMeasurements(node,item){
     bindTextNumber(".m-return","returnValue",num);
     bindTextNumber(".m-overlap","overlapValue",num);
 
-    const flToggle=$(".m-include-fl",setNode);
-    if(flToggle){
-      flToggle.addEventListener("change",()=>{
-        item.measurements[idx].includeFL=flToggle.checked;
-        refreshItem();
+    const fwToggle=$(".m-include-fw",setNode);
+    if(fwToggle){
+      fwToggle.addEventListener("change",()=>{
+        // Preserve every other entered field before this checkbox causes a rerender.
+        syncDraperyMeasurementsFromDOM(node,item);
+        item.measurements[idx].includeFW=fwToggle.checked;
+        renderRooms();
+        renderPreview();
+        renderDiscountSummary();
       });
     }
 
     const returnToggle=$(".m-include-return",setNode);
     if(returnToggle){
       returnToggle.addEventListener("change",()=>{
+        syncDraperyMeasurementsFromDOM(node,item);
         item.measurements[idx].includeReturn=returnToggle.checked;
-        refreshItem();
+        renderRooms();
+        renderPreview();
+        renderDiscountSummary();
       });
     }
 
     const overlapToggle=$(".m-include-overlap",setNode);
     if(overlapToggle){
       overlapToggle.addEventListener("change",()=>{
+        syncDraperyMeasurementsFromDOM(node,item);
         item.measurements[idx].includeOverlap=overlapToggle.checked;
-        refreshItem();
+        renderRooms();
+        renderPreview();
+        renderDiscountSummary();
       });
     }
   });
@@ -479,36 +526,32 @@ function bindDraperyMeasurements(node,item){
   const addBtn=$(".add-measurement-btn",node);
   if(addBtn){
     addBtn.addEventListener("click",()=>{
+      // Critical fix: pull the current values directly from the form first.
+      // This prevents the previous row from being cleared when the UI rerenders.
+      syncDraperyMeasurementsFromDOM(node,item);
       ensureDraperyMeasurements(item);
+
       const last=item.measurements[item.measurements.length-1] || legacyMeasurementFromItem(item);
 
-      // Exact duplicate of the previous measurement.
-      // This intentionally copies Q, Pair/Panel, widths, FL, FW,
-      // Return/Overlap toggles, and their entered values.
-      const copy={
-        quantity:last.quantity,
-        pieceType:last.pieceType,
-        widths:last.widths,
-        includeFL:last.includeFL,
-        fl:last.fl,
-        fw:last.fw,
-        includeReturn:last.includeReturn,
-        returnValue:last.returnValue,
-        includeOverlap:last.includeOverlap,
-        overlapValue:last.overlapValue
-      };
-
+      // Deep-clone the PREVIOUS row exactly, then allow the new row to be edited independently.
+      const copy=JSON.parse(JSON.stringify(last));
       item.measurements.push(copy);
-      refreshItem();
+
+      renderRooms();
+      renderPreview();
+      renderDiscountSummary();
     });
   }
 
   $$(".remove-measurement-btn",node).forEach(btn=>{
     btn.addEventListener("click",()=>{
+      syncDraperyMeasurementsFromDOM(node,item);
       const idx=Number(btn.dataset.measureIndex);
       if(Number.isInteger(idx) && idx>0 && item.measurements.length>1){
         item.measurements.splice(idx,1);
-        refreshItem();
+        renderRooms();
+        renderPreview();
+        renderDiscountSummary();
       }
     });
   });
@@ -565,7 +608,7 @@ function draperyCalc(i){
       }
     }
 
-    const fl=m.includeFL===false ? 0 : num(m.fl);
+    const fl=num(m.fl);
     if(fl>=160){
       linePct+=100;
       lineReasons.push('Length 160"+: +100% (double)');
@@ -673,7 +716,7 @@ function itemDescription(i){
   if(i.type==="drapery"){
     const style=i.style==="Custom"?(i.customStyle||"Custom Drapery"):i.style;
     const c=draperyCalc(i);
-    const liningText=i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined";
+    const liningText=i.lining==="L/I" ? "L/I" : (i.lining && i.lining!=="No Lining" ? i.lining.toLowerCase() : "unlined");
     const bits=[`${style} (${liningText})`];
 
     c.measurements.forEach(m=>{
@@ -681,8 +724,8 @@ function itemDescription(i){
       const qty=Math.max(1,num(m.quantity)||1);
       const widths=num(m.widths)||0;
       const measurements=[];
-      if(m.includeFL!==false) measurements.push(`FL-${num(m.fl)||""}"`);
-      measurements.push(`FW-${num(m.fw)||""}"`);
+      measurements.push(`FL-${num(m.fl)||""}"`);
+      if(m.includeFW) measurements.push(`FW-${num(m.fw)||""}"`);
       if(m.includeReturn) measurements.push(`R-${num(m.returnValue)||""}"`);
       if(m.includeOverlap) measurements.push(`Overlap-${num(m.overlapValue)||""}"`);
 

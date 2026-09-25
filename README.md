@@ -44,10 +44,10 @@ Data is currently stored in browser localStorage for this mock version.
 - Estimate / Invoice switch now explicitly updates the watermark and builder heading.
 - Added cache-busting version tags for GitHub Pages so updated JavaScript/CSS loads instead of an older cached copy.
 
-V3.9: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
+V3.10: repaired preview, embedded logo, Designers page, designer deletion, phone/email normalization, local date.
 
 
-## V3.9 update
+## V3.10 update
 - FL can now be toggled on/off for each drapery line item.
 - When FL is off, no finished-length surcharge is applied and FL is omitted from the invoice description.
 - Added optional Return measurement toggle. When enabled it prints as R-#".
@@ -55,7 +55,7 @@ V3.9: repaired preview, embedded logo, Designers page, designer deletion, phone/
 - Return and Overlap are informational measurements only and do not automatically change pricing.
 
 
-## V3.9 update
+## V3.10 update
 - Drapery items can now contain multiple measurement sets under the same room/style.
 - Use “+ Add Another Measurement” to add a second, third, etc. full measurement row.
 - Each measurement row has its own:
@@ -73,7 +73,7 @@ V3.9: repaired preview, embedded logo, Designers page, designer deletion, phone/
 - Additional measurement rows can be removed without deleting the whole drapery item.
 
 
-## V3.9 fixes
+## V3.10 fixes
 - “+ Add Another Measurement” now duplicates the entire previous measurement row.
 - The copied row includes:
   - Quantity
@@ -85,3 +85,15 @@ V3.9: repaired preview, embedded logo, Designers page, designer deletion, phone/
   - Overlap toggle and Overlap value
 - FL / Return / Overlap checkboxes were rewritten with direct event handlers so the matching measurement field reliably appears/disappears.
 - Removed the accidental duplicated “Return” label.
+
+
+## V3.10 updates
+- Added `L/I` to the Drapery Lining dropdown.
+- L/I remains uppercase in the printed invoice description.
+- FL is now always available for drapery measurements.
+- FW is now the measurement that can be toggled on/off.
+- Return and Overlap remain optional toggles.
+- Fixed Add Another Measurement so the current row is synced from the live form before the UI rebuilds.
+- The new measurement is now a deep copy of the previous row, including all currently typed values.
+- Editing the copied row does not change or clear the previous measurement.
+- Toggle changes also sync all other measurement values first, preventing typed entries from disappearing.

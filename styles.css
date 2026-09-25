@@ -325,3 +325,11 @@ input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
   font-size:10px;
   font-style:italic;
 }
+
+
+/* ---------- V3.10 FW toggle + measurement copy fix ---------- */
+.measurement-toggle-row .measurement-toggle:first-child.active{
+  border-color:#6f8b76;
+  background:#e9f0e9;
+  box-shadow:inset 0 0 0 1px rgba(35,61,50,.06);
+}
