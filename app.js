@@ -47,7 +47,10 @@ const state = {
 
 const LS_CLIENTS = "evana_clients_v1";
 const LS_INVOICES = "evana_invoices_v1";
+const LS_DRAFT = "evana_current_draft_v1";
 const INVOICE_START = 691;
+let applyingExternalState = false;
+let lastLoadedBundleStamp = "";
 
 function uid(prefix="id"){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
 function money(n){ return `$${(Number(n)||0).toFixed(2)}`; }
@@ -78,17 +81,127 @@ function clientPhone2(c={}){return ((c.phones||[])[1]||c.phone2||c.clientPhone2|
 function clientEmail1(c={}){return ((c.emails||[])[0]||c.email1||c.clientEmail1||c.email||"");}
 function clientEmail2(c={}){return ((c.emails||[])[1]||c.email2||c.clientEmail2||"");}
 
-function seed(){
-  try { state.clients = JSON.parse(localStorage.getItem(LS_CLIENTS) || "[]"); } catch { state.clients=[]; }
-  try { state.invoices = JSON.parse(localStorage.getItem(LS_INVOICES) || "[]"); } catch { state.invoices=[]; }
-  state.clients = state.clients.map(normalizeDesigner);
-  persistClients();
+
+function updateDocTypeUI(){
+  $$(".seg").forEach(b=>b.classList.toggle("active", b.dataset.docType===state.docType));
+  const title=$("#builderTitle");
+  if(title) title.textContent=`Create ${state.docType}`;
+}
+function currentDraftSnapshot(){
+  return {
+    rooms: JSON.parse(JSON.stringify(state.rooms || [])),
+    projectAddress: $("#projectAddress")?.value || "",
+    date: $("#docDate")?.value || localISODate(),
+    invoiceNumber: $("#invoiceNumber")?.value || String(nextInvoiceNumber()),
+    status: $("#invoiceStatus")?.value || "Open",
+    install: $("#installationTotal")?.value || "",
+    discountType: $("#discountType")?.value || "",
+    discountValue: $("#discountValue")?.value || "",
+    discountLabel: $("#discountLabel")?.value || "",
+    clientId: $("#clientSelect")?.value || "",
+    docType: state.docType || "Estimate"
+  };
+}
+function applyBundleToState(bundle){
+  if(!bundle) return;
+  applyingExternalState = true;
+  lastLoadedBundleStamp = bundle.updatedAt || "";
+  state.clients = (bundle.clients || []).map(normalizeDesigner);
+  state.invoices = bundle.invoices || [];
   populateClients();
-  $("#docDate").value = localISODate();
-  $("#invoiceNumber").value = String(nextInvoiceNumber());
-  const title=$("#builderTitle"); if(title) title.textContent=`Create ${state.docType}`;
-  addRoom("Living Room / Dining Room");
+  const draft = bundle.currentDraft;
+  if(draft){
+    state.docType = draft.docType || "Estimate";
+    updateDocTypeUI();
+    $("#docDate").value = draft.date || localISODate();
+    $("#invoiceNumber").value = String(draft.invoiceNumber || nextInvoiceNumber());
+    $("#invoiceStatus").value = draft.status || "Open";
+    $("#projectAddress").value = draft.projectAddress || "";
+    $("#installationTotal").value = draft.install || "";
+    $("#discountType").value = draft.discountType || "";
+    $("#discountValue").value = draft.discountValue || "";
+    $("#discountLabel").value = draft.discountLabel || "";
+    if(draft.clientId) $("#clientSelect").value = draft.clientId;
+    state.rooms = Array.isArray(draft.rooms) ? draft.rooms : [];
+  } else {
+    state.docType = state.docType || "Estimate";
+    updateDocTypeUI();
+    $("#docDate").value = localISODate();
+    $("#invoiceNumber").value = String(nextInvoiceNumber());
+    state.rooms = [];
+  }
+  if(!state.rooms.length){
+    state.rooms = [{id:uid("room"),name:"Living Room / Dining Room",notes:"",items:[{id:uid("item"),type:"drapery",quantity:1,manualDescription:"",overridePrice:""}]}];
+  }
+  renderRooms();
   renderPreview();
+  renderDiscountSummary();
+  applyingExternalState = false;
+}
+function syncPayload(){
+  return { clients: state.clients, invoices: state.invoices, currentDraft: currentDraftSnapshot() };
+}
+function syncStatus(message){
+  const el = $("#syncStatusText");
+  if(el) el.textContent = message;
+}
+async function autosaveAll(immediate=false){
+  if(applyingExternalState) return;
+  const draft = currentDraftSnapshot();
+  localStorage.setItem(LS_DRAFT, JSON.stringify(draft));
+  localStorage.setItem("evana_bundle_meta_v1", JSON.stringify({updatedAt:new Date().toISOString()}));
+  if(window.EvanaSync){
+    await window.EvanaSync.savePartial(syncPayload(), { immediate });
+  } else {
+    syncStatus("Saved locally in this browser.");
+  }
+}
+async function initSyncUI(){
+  if(!window.EvanaSync) return;
+  window.EvanaSync.onStatus(({message})=>syncStatus(message));
+  await window.EvanaSync.init();
+  const syncBtn = $("#syncNowBtn");
+  const loadBtn = $("#loadCloudBtn");
+  if(syncBtn) syncBtn.addEventListener("click", async()=>{ await autosaveAll(true); alert("Saved and synced."); });
+  if(loadBtn) loadBtn.addEventListener("click", async()=>{
+    const latest = await window.EvanaSync.pullLatest();
+    if(latest && latest.updatedAt !== lastLoadedBundleStamp){
+      applyBundleToState(latest);
+      alert("Loaded latest cloud data.");
+    } else {
+      alert("You already have the latest data loaded.");
+    }
+  });
+  window.addEventListener("focus", async()=>{
+    const latest = await window.EvanaSync.pullLatest();
+    if(latest && latest.updatedAt && latest.updatedAt !== lastLoadedBundleStamp && new Date(latest.updatedAt).getTime() > new Date(lastLoadedBundleStamp || 0).getTime()){
+      applyBundleToState(latest);
+    }
+  });
+}
+
+async function seed(){
+  return (async()=>{
+    let startupBundle = null;
+    if(window.EvanaSync){
+      startupBundle = await window.EvanaSync.getStartupBundle();
+    }
+    if(startupBundle){
+      applyBundleToState(startupBundle);
+    } else {
+      try { state.clients = JSON.parse(localStorage.getItem(LS_CLIENTS) || "[]"); } catch { state.clients=[]; }
+      try { state.invoices = JSON.parse(localStorage.getItem(LS_INVOICES) || "[]"); } catch { state.invoices=[]; }
+      state.clients = state.clients.map(normalizeDesigner);
+      persistClients();
+      populateClients();
+      $("#docDate").value = localISODate();
+      $("#invoiceNumber").value = String(nextInvoiceNumber());
+      updateDocTypeUI();
+      addRoom("Living Room / Dining Room");
+      renderPreview();
+    }
+    await initSyncUI();
+  })();
 }
 function persistClients(){ localStorage.setItem(LS_CLIENTS, JSON.stringify(state.clients)); }
 function persistInvoices(){ localStorage.setItem(LS_INVOICES, JSON.stringify(state.invoices)); }
@@ -368,11 +481,22 @@ function romanForm(i){
   i.overridePrice||="";
   i.itemNote||="";
   i.showPricing ??=true;
-  i.hasFlaps ??= false;
-  i.flapsPrice ??= 0;
-  i.hasValance ??= false;
-  i.valancePrice ??= 0;
-  i.valanceQty ??= 1;
+
+  // V3.14: migrate older Flaps / Valance data into one 3-way selector.
+  if(!i.topTreatment){
+    i.topTreatment = i.hasFlaps ? "Flaps" : (i.hasValance ? "Valance" : "None");
+  }
+  if(i.topTreatmentFL==null) i.topTreatmentFL="";
+  if(i.topTreatmentPrice==null){
+    const legacyPrice = i.topTreatment==="Flaps" ? num(i.flapsPrice) : (i.topTreatment==="Valance" ? num(i.valancePrice) : 0);
+    i.topTreatmentPrice = legacyPrice || 20;
+  }
+
+  // Keep legacy values in sync for older saved jobs / migration safety.
+  i.hasFlaps = i.topTreatment === "Flaps";
+  i.hasValance = i.topTreatment === "Valance";
+  if(i.hasFlaps) i.flapsPrice = i.topTreatmentPrice;
+  if(i.hasValance) i.valancePrice = i.topTreatmentPrice;
 
   return `
   <div class="workflow-label">MOUNT</div>
@@ -412,38 +536,33 @@ function romanForm(i){
 
   <div class="subsection">
     <div class="subsection-head">
-      <h4>Flaps / Valance</h4>
-      <span class="muted">Toggle and regulate the price</span>
+      <h4>Top Treatment</h4>
+      <span class="muted">Choose one</span>
     </div>
-    <div class="roman-addon-grid">
-      <div class="roman-addon-card ${i.hasFlaps?"selected":""}">
-        <label class="roman-addon-toggle">
-          <input type="checkbox" class="f-has-flaps" ${i.hasFlaps?"checked":""}>
-          <span>Flaps</span>
+
+    <div class="segmented-choice roman-top-treatment-choice three-choice">
+      ${["None","Flaps","Valance"].map(v=>`
+        <label class="${i.topTreatment===v?"selected":""}">
+          <input type="radio" class="f-top-treatment" name="top-treatment-${i.id||""}" value="${v}" ${i.topTreatment===v?"checked":""}>
+          <span>${v}</span>
         </label>
-        ${i.hasFlaps?`
-          <label>Flaps Price
-            <div class="charge-input"><span>$</span><input class="f-flaps-price" type="number" min="0" step="0.01" value="${i.flapsPrice}"></div>
+      `).join("")}
+    </div>
+
+    ${i.topTreatment!=="None"?`
+      <div class="roman-treatment-popup">
+        <div class="roman-treatment-popup-title">${i.topTreatment} Details</div>
+        <div class="grid grid-2">
+          <label>FL
+            <div class="inch-field"><input class="f-top-treatment-fl" type="number" min="0" step="0.25" value="${i.topTreatmentFL}"><span>"</span></div>
           </label>
-        `:""}
+          <label>Price
+            <div class="charge-input"><span>$</span><input class="f-top-treatment-price" type="number" min="0" step="0.01" value="${i.topTreatmentPrice}"></div>
+          </label>
+        </div>
+        <div class="roman-rate-note">Default ${i.topTreatment.toLowerCase()} price is $20. You can change it for any job.</div>
       </div>
-      <div class="roman-addon-card ${i.hasValance?"selected":""}">
-        <label class="roman-addon-toggle">
-          <input type="checkbox" class="f-has-valance" ${i.hasValance?"checked":""}>
-          <span>Valance</span>
-        </label>
-        ${i.hasValance?`
-          <div class="grid grid-2 compact-addon-grid">
-            <label>Valance Price
-              <div class="charge-input"><span>$</span><input class="f-valance-price" type="number" min="0" step="0.01" value="${i.valancePrice}"></div>
-            </label>
-            <label>Valance Q
-              <input class="f-valance-qty" type="number" min="1" step="1" value="${i.valanceQty}">
-            </label>
-          </div>
-        `:""}
-      </div>
-    </div>
+    `:""}
   </div>
 
   <div class="subsection">
@@ -638,6 +757,7 @@ function customForm(i){
     <label>Quantity<input class="f-quantity" type="number" min="1" step="1" value="${i.quantity}"></label>
     <label>Override Final Price<input class="f-override" type="number" min="0" step="0.01" value="${i.overridePrice||""}" placeholder="Optional"></label>
   </div>`;
+  autosaveAll(false);
 }
 function rangeText(r){ if(!r) return "Manual"; return r[0]===r[1]?money(r[0]):`${money(r[0])}–${money(r[1])}`; }
 
@@ -841,11 +961,17 @@ function bindItemForm(node,item){
     bind(".f-override","overridePrice",v=>v===""?"":num(v));
     bind(".f-item-note","itemNote");
     bind(".f-show-pricing","showPricing",Boolean,true);
-    bind(".f-has-flaps","hasFlaps",Boolean,true);
-    bind(".f-flaps-price","flapsPrice",num);
-    bind(".f-has-valance","hasValance",Boolean,true);
-    bind(".f-valance-price","valancePrice",num);
-    bind(".f-valance-qty","valanceQty",v=>Math.max(1,num(v)||1));
+    $$(".f-top-treatment",node).forEach(r=>r.addEventListener("change",()=>{
+      if(r.checked){
+        item.topTreatment=r.value;
+        item.hasFlaps=r.value==="Flaps";
+        item.hasValance=r.value==="Valance";
+        if(item.topTreatment!=="None" && !num(item.topTreatmentPrice)) item.topTreatmentPrice=20;
+        renderRooms(); renderPreview(); renderDiscountSummary();
+      }
+    }));
+    bind(".f-top-treatment-fl","topTreatmentFL",num);
+    bind(".f-top-treatment-price","topTreatmentPrice",num);
   }
 
   if(item.type==="pillow"){
@@ -1002,8 +1128,11 @@ function romanCalc(i){
   if(extras.includes("Continuous Cord System")) extrasEach+=100;
   if(extras.includes("Stabilizing Fabric")) extrasEach+=sqft*2;
 
-  if(i.hasFlaps) extrasEach+=num(i.flapsPrice);
-  if(i.hasValance) extrasEach+=num(i.valancePrice)*Math.max(1,num(i.valanceQty)||1);
+  const topTreatment = i.topTreatment || (i.hasFlaps ? "Flaps" : (i.hasValance ? "Valance" : "None"));
+  if(topTreatment!=="None"){
+    const legacyPrice = topTreatment==="Flaps" ? num(i.flapsPrice) : num(i.valancePrice);
+    extrasEach += num(i.topTreatmentPrice) || legacyPrice || 20;
+  }
 
   each+=extrasEach;
   const calculated=each*Math.max(1,num(i.quantity));
@@ -1116,8 +1245,11 @@ function itemDescription(i){
     const measurements=`FW-${num(i.fw)||""}", FL-${num(i.fl)||""}"${i.proj!==""&&i.proj!=null?`, Proj-${num(i.proj)||""}"`:""} [${c.sqft.toFixed(2)} sq. ft.]`;
     const bits=[i.style||"Roman Shade",i.mount||"Inside Mount",measurements];
 
-    if(i.hasFlaps) bits.push("Flaps");
-    if(i.hasValance) bits.push(`Valance${num(i.valanceQty)>1?` — Q ${num(i.valanceQty)}`:""}`);
+    const topTreatment = i.topTreatment || (i.hasFlaps ? "Flaps" : (i.hasValance ? "Valance" : "None"));
+    if(topTreatment!=="None"){
+      const treatmentFL = i.topTreatmentFL!=="" && i.topTreatmentFL!=null ? ` — FL-${num(i.topTreatmentFL)}"` : "";
+      bits.push(`${topTreatment}${treatmentFL}`);
+    }
 
     (i.extras||[]).forEach(x=>bits.push(
       x==="Pattern Match"||x==="Pattern Matching" ? "Match Print" : x
@@ -1275,24 +1407,24 @@ $("#clientForm").addEventListener("submit",e=>{
   e.preventDefault();
   const c=normalizeDesigner({id:uid("designer"),name:$("#clientName").value.trim(),contact:$("#contactName").value.trim(),address:$("#clientAddress").value.trim(),phones:[$("#clientPhone1").value.trim(),$("#clientPhone2").value.trim()],emails:[$("#clientEmail1").value.trim(),$("#clientEmail2").value.trim()],notes:$("#clientNotes").value.trim()});
   if(!c.name) return;
-  state.clients.push(c); persistClients(); populateClients(); $("#clientSelect").value=c.id; $("#projectAddress").value=c.address; $("#clientForm").reset(); $("#clientDialog").close(); renderPreview();
+  state.clients.push(c); persistClients(); populateClients(); $("#clientSelect").value=c.id; $("#projectAddress").value=c.address; $("#clientForm").reset(); $("#clientDialog").close(); renderPreview(); autosaveAll(false);
 });
-$("#saveInvoiceBtn").addEventListener("click",()=>{
+$("#saveInvoiceBtn").addEventListener("click", async()=>{
   const inv=collectInvoice();
   state.invoices.push(inv);
   persistInvoices();
+  await autosaveAll(true);
   renderDashboard();
   alert(`Saved ${inv.docType} #${inv.invoiceNumber} to ${inv.clientName}.`);
   $("#invoiceNumber").value = String(nextInvoiceNumber());
   const title=$("#builderTitle"); if(title) title.textContent=`Create ${state.docType}`;
   renderPreview();
 });
-$("#saveDraftBtn").addEventListener("click",()=>{localStorage.setItem("evana_current_draft_v1",JSON.stringify({rooms:state.rooms,projectAddress:$("#projectAddress").value,date:$("#docDate").value,invoiceNumber:$("#invoiceNumber").value,status:$("#invoiceStatus").value,install:$("#installationTotal").value,discountType:$("#discountType").value,discountValue:$("#discountValue").value,discountLabel:$("#discountLabel").value,clientId:$("#clientSelect").value,docType:state.docType})); alert("Draft saved in this browser.");});
+$("#saveDraftBtn").addEventListener("click", async()=>{ await autosaveAll(true); alert("Draft saved locally and to cloud if configured.");});
 
 ["#clientPhone1","#clientPhone2"].forEach(sel=>{
   const el=$(sel); if(!el) return;
   el.addEventListener("input",()=>{el.value=formatPhone(el.value);});
 });
 
-seed();
-renderDiscountSummary();
+seed().then(()=>renderDiscountSummary());

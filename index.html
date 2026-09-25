@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Evana Draperies Invoice Builder</title>
-  <link rel="stylesheet" href="styles.css?v=3.12" />
+  <link rel="stylesheet" href="styles.css?v=3.14" />
 </head>
 <body>
   <header class="app-header">
@@ -15,7 +15,7 @@
       <div class="brand-copy">
         <div class="eyebrow light">PRIVATE WORKROOM TOOL</div>
         <h1>Evana Draperies</h1>
-        <p>Estimate & Invoice Studio <span class="build-badge">V3.12</span></p>
+        <p>Estimate & Invoice Studio <span class="build-badge">V3.14</span></p>
       </div>
     </div>
     <div class="header-actions">
@@ -24,6 +24,18 @@
       <button class="btn gold" id="printBtn">Print / Save PDF</button>
     </div>
   </header>
+
+<section class="sync-strip">
+  <div>
+    <div class="eyebrow">SYNC</div>
+    <div id="syncStatusText" class="sync-status-text">Local autosave enabled.</div>
+  </div>
+  <div class="sync-strip-actions">
+    <button class="btn ghost" id="loadCloudBtn" type="button">Load Latest Cloud</button>
+    <button class="btn" id="syncNowBtn" type="button">Sync Now</button>
+  </div>
+</section>
+
 
   <main class="app-shell">
     <section class="panel builder-panel" id="builderPanel">
@@ -227,6 +239,9 @@
     </article>
   </template>
 
-  <script src="app.js?v=3.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js?v=3.14"></script>
+  <script src="sync.js?v=3.14"></script>
+  <script src="app.js?v=3.14"></script>
 </body>
 </html>

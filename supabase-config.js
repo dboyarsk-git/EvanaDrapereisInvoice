@@ -1,0 +1,5 @@
+window.EVANA_SUPABASE_CONFIG = {
+  url: "PASTE_YOUR_SUPABASE_URL_HERE",
+  anonKey: "PASTE_YOUR_SUPABASE_ANON_KEY_HERE",
+  workspaceId: "evana-main"
+};

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Evana Draperies — Designers</title>
-  <link rel="stylesheet" href="styles.css?v=3.6">
+  <link rel="stylesheet" href="styles.css?v=3.14">
 </head>
 <body class="clients-page-body">
 <header class="app-header">
@@ -21,6 +21,18 @@
     <button class="btn gold" id="addClientPageBtn">+ Add Designer</button>
   </div>
 </header>
+
+<section class="sync-strip sync-strip-compact">
+  <div>
+    <div class="eyebrow">SYNC</div>
+    <div id="syncStatusText" class="sync-status-text">Local autosave enabled.</div>
+  </div>
+  <div class="sync-strip-actions">
+    <button class="btn ghost" id="loadCloudBtn" type="button">Load Latest Cloud</button>
+    <button class="btn" id="syncNowBtn" type="button">Sync Now</button>
+  </div>
+</section>
+
 
 <main class="clients-page-shell">
   <section class="clients-hero">
@@ -62,6 +74,9 @@
   </form>
 </dialog>
 
-<script src="designers.js?v=3.6"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js?v=3.14"></script>
+<script src="sync.js?v=3.14"></script>
+<script src="designers.js?v=3.14"></script>
 </body>
 </html>
