@@ -307,3 +307,21 @@ input[readonly]{background:#f3eee6;color:#665e53;cursor:not-allowed}
     grid-template-columns:1fr 1fr;
   }
 }
+
+
+/* ---------- V3.9 measurement toggle reliability ---------- */
+.measurement-toggle{
+  position:relative;
+}
+.measurement-toggle input[type="checkbox"]{
+  width:15px;
+  height:15px;
+  flex:0 0 15px;
+  cursor:pointer;
+}
+.measurement-copy-note{
+  margin:-7px 0 15px 3px;
+  color:var(--muted);
+  font-size:10px;
+  font-style:italic;
+}

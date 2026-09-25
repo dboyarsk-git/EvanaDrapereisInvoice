@@ -281,6 +281,7 @@ function draperyForm(i){
   </div>
 
   <button type="button" class="btn add-measurement-btn">+ Add Another Measurement</button>
+  <div class="measurement-copy-note">New measurement rows copy the previous row so you only change what is different.</div>
 
   <div class="grid grid-2 drapery-common-fields">
     <label>Lining
@@ -418,74 +419,100 @@ function updateDraperySurcharges(node,item){
 function bindDraperyMeasurements(node,item){
   ensureDraperyMeasurements(item);
 
+  const refreshItem=()=>{
+    renderRooms();
+    renderPreview();
+    renderDiscountSummary();
+  };
+
   $$(".measurement-set",node).forEach(setNode=>{
-    const idx=num(setNode.dataset.measureIndex);
+    const idx=Number(setNode.dataset.measureIndex);
     const m=item.measurements[idx];
     if(!m) return;
 
-    const bindM=(sel,key,convert=v=>v,rerender=false)=>{
+    const bindTextNumber=(sel,key,convert=v=>v)=>{
       const el=$(sel,setNode);
       if(!el) return;
-      const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input";
+      const evt=el.tagName==="SELECT" ? "change" : "input";
       el.addEventListener(evt,()=>{
-        m[key]=convert(el.type==="checkbox"?el.checked:el.value);
-        if(rerender){
-          renderRooms();
-        }else{
-          updateDraperySurcharges(node,item);
-          renderPriceSummary(node,item);
-          renderPreview();
-          renderDiscountSummary();
-        }
+        m[key]=convert(el.value);
+        updateDraperySurcharges(node,item);
+        renderPriceSummary(node,item);
+        renderPreview();
+        renderDiscountSummary();
       });
     };
 
-    bindM(".m-quantity","quantity",num);
-    bindM(".m-piece","pieceType",v=>v);
-    bindM(".m-widths","widths",num);
-    bindM(".m-include-fl","includeFL",Boolean,true);
-    bindM(".m-fl","fl",num);
-    bindM(".m-fw","fw",num);
-    bindM(".m-include-return","includeReturn",Boolean,true);
-    bindM(".m-return","returnValue",num);
-    bindM(".m-include-overlap","includeOverlap",Boolean,true);
-    bindM(".m-overlap","overlapValue",num);
+    bindTextNumber(".m-quantity","quantity",v=>Math.max(1,num(v)||1));
+    bindTextNumber(".m-piece","pieceType",v=>v);
+    bindTextNumber(".m-widths","widths",num);
+    bindTextNumber(".m-fl","fl",num);
+    bindTextNumber(".m-fw","fw",num);
+    bindTextNumber(".m-return","returnValue",num);
+    bindTextNumber(".m-overlap","overlapValue",num);
+
+    const flToggle=$(".m-include-fl",setNode);
+    if(flToggle){
+      flToggle.addEventListener("change",()=>{
+        item.measurements[idx].includeFL=flToggle.checked;
+        refreshItem();
+      });
+    }
+
+    const returnToggle=$(".m-include-return",setNode);
+    if(returnToggle){
+      returnToggle.addEventListener("change",()=>{
+        item.measurements[idx].includeReturn=returnToggle.checked;
+        refreshItem();
+      });
+    }
+
+    const overlapToggle=$(".m-include-overlap",setNode);
+    if(overlapToggle){
+      overlapToggle.addEventListener("change",()=>{
+        item.measurements[idx].includeOverlap=overlapToggle.checked;
+        refreshItem();
+      });
+    }
   });
 
   const addBtn=$(".add-measurement-btn",node);
   if(addBtn){
     addBtn.addEventListener("click",()=>{
+      ensureDraperyMeasurements(item);
       const last=item.measurements[item.measurements.length-1] || legacyMeasurementFromItem(item);
-      item.measurements.push({
-        quantity:1,
-        pieceType:last.pieceType||"Pair",
-        widths:last.widths||1,
-        includeFL:last.includeFL!==false,
-        fl:"",
-        fw:"",
-        includeReturn:!!last.includeReturn,
-        returnValue:"",
-        includeOverlap:!!last.includeOverlap,
-        overlapValue:""
-      });
-      renderRooms();
-      renderPreview();
+
+      // Exact duplicate of the previous measurement.
+      // This intentionally copies Q, Pair/Panel, widths, FL, FW,
+      // Return/Overlap toggles, and their entered values.
+      const copy={
+        quantity:last.quantity,
+        pieceType:last.pieceType,
+        widths:last.widths,
+        includeFL:last.includeFL,
+        fl:last.fl,
+        fw:last.fw,
+        includeReturn:last.includeReturn,
+        returnValue:last.returnValue,
+        includeOverlap:last.includeOverlap,
+        overlapValue:last.overlapValue
+      };
+
+      item.measurements.push(copy);
+      refreshItem();
     });
   }
 
   $$(".remove-measurement-btn",node).forEach(btn=>{
     btn.addEventListener("click",()=>{
-      const idx=num(btn.dataset.measureIndex);
-      if(idx>0 && item.measurements.length>1){
+      const idx=Number(btn.dataset.measureIndex);
+      if(Number.isInteger(idx) && idx>0 && item.measurements.length>1){
         item.measurements.splice(idx,1);
-        renderRooms();
-        renderPreview();
-        renderDiscountSummary();
+        refreshItem();
       }
     });
   });
 }
-
 function bindItemForm(node,item){
   const bind=(sel,key,convert=v=>v,rerender=false)=>{ const el=$(sel,node); if(!el) return; const evt=(el.type==="checkbox"||el.tagName==="SELECT")?"change":"input"; el.addEventListener(evt,e=>{ item[key]=convert(el.type==="checkbox"?el.checked:el.value); if(rerender) renderRooms(); else { updateDraperySurcharges(node,item); renderPriceSummary(node,item); renderPreview(); renderDiscountSummary(); } }); };
 
