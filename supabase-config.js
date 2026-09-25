@@ -1,5 +1,5 @@
 window.EVANA_SUPABASE_CONFIG = {
-  url: "PASTE_YOUR_SUPABASE_URL_HERE",
-  anonKey: "PASTE_YOUR_SUPABASE_ANON_KEY_HERE",
+  url: "https://udkykqvnhlsmsmcoyqyz.supabase.co",
+  anonKey: "sb_publishable_LTB_Cd7m-13-eVRSh4jqug_bNdTKWm9",
   workspaceId: "evana-main"
 };
